@@ -1,16 +1,19 @@
 /**
  * 🎨 PREMIUM DASHBOARD - Control Center
  * Key metrics, activity feed, AI insights, and quick actions
+ * All data sourced from real Appwrite backend
  */
 
 import { FAB } from "@/src/components/ui/FAB";
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
+import { employeeQueries } from "@/src/services/appwriteClient";
+import { leavesService } from "@/src/services/leaves.service";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -21,17 +24,58 @@ import {
   View,
 } from "react-native";
 
+interface DashboardMetrics {
+  totalEmployees: number;
+  activeEmployees: number;
+  onLeaveCount: number;
+  pendingLeaves: number;
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalEmployees: 0,
+    activeEmployees: 0,
+    onLeaveCount: 0,
+    pendingLeaves: 0,
+  });
+
+  const loadDashboardData = useCallback(async () => {
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const [empStats, leaveStats] = await Promise.all([
+        employeeQueries.getEmployeeStats(user.companyId),
+        leavesService.getLeaveStats(user.companyId).catch(() => ({
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+        })),
+      ]);
+
+      setMetrics({
+        totalEmployees: empStats.total,
+        activeEmployees: empStats.active,
+        onLeaveCount: empStats.onLeave,
+        pendingLeaves: leaveStats.pending,
+      });
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.companyId]);
 
   useEffect(() => {
-    // Simulate loading
-    setLoading(false);
-  }, []);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const styles = StyleSheet.create({
     container: {
@@ -83,52 +127,11 @@ export default function DashboardScreen() {
       borderWidth: 1,
       opacity: 0.8,
     },
-    aiTitle: {
-      fontSize: THEME.typography.h6.fontSize,
-      fontWeight: "600",
-      color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-      marginBottom: THEME.spacing.sm,
-      flexDirection: "row",
-      gap: THEME.spacing.sm,
-    },
     aiText: {
       fontSize: THEME.typography.bodySm.fontSize,
       color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
       lineHeight: THEME.typography.bodySm.lineHeight,
       marginBottom: THEME.spacing.sm,
-    },
-    activityFeed: {
-      marginBottom: THEME.spacing.xl,
-    },
-    activityItem: {
-      flexDirection: "row",
-      gap: THEME.spacing.md,
-      paddingVertical: THEME.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: isDark ? THEME.dark.border : THEME.light.border,
-    },
-    activityIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
-      backgroundColor: isDark
-        ? THEME.dark.background.tertiary
-        : THEME.light.background.tertiary,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    activityContent: {
-      flex: 1,
-    },
-    activityTitle: {
-      fontSize: THEME.typography.body.fontSize,
-      fontWeight: "500",
-      color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-      marginBottom: THEME.spacing.xs,
-    },
-    activityTime: {
-      fontSize: THEME.typography.caption.fontSize,
-      color: isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary,
     },
   });
 
@@ -139,10 +142,10 @@ export default function DashboardScreen() {
     return "Good Evening";
   };
 
-  const metrics = [
+  const metricCards = [
     {
       label: "Total Employees",
-      value: "156",
+      value: loading ? "..." : String(metrics.totalEmployees),
       icon: (
         <MaterialCommunityIcons
           name="account-multiple"
@@ -150,23 +153,23 @@ export default function DashboardScreen() {
           color={THEME.colors.primary}
         />
       ),
-      trend: { direction: "up" as const, percentage: 12, label: "This month" },
+      onPress: () => router.push("/(dashboard)/employees"),
     },
     {
-      label: "Attendance Rate",
-      value: "89%",
+      label: "Active",
+      value: loading ? "..." : String(metrics.activeEmployees),
       icon: (
         <MaterialCommunityIcons
-          name="calendar-check"
+          name="account-check"
           size={24}
           color={THEME.colors.success}
         />
       ),
-      trend: { direction: "up" as const, percentage: 5 },
+      onPress: () => router.push("/(dashboard)/employees"),
     },
     {
-      label: "Pending Approvals",
-      value: "12",
+      label: "Pending Leaves",
+      value: loading ? "..." : String(metrics.pendingLeaves),
       icon: (
         <MaterialCommunityIcons
           name="clipboard-check-outline"
@@ -174,39 +177,19 @@ export default function DashboardScreen() {
           color={THEME.colors.warning}
         />
       ),
-      trend: { direction: "down" as const, percentage: 8 },
+      onPress: () => router.push("/(dashboard)/leaves"),
     },
     {
-      label: "Payroll Status",
-      value: "On Track",
+      label: "On Leave",
+      value: loading ? "..." : String(metrics.onLeaveCount),
       icon: (
         <MaterialCommunityIcons
-          name="cash-check"
+          name="beach"
           size={24}
-          color={THEME.colors.success}
+          color={THEME.colors.info}
         />
       ),
-    },
-  ];
-
-  const recentActivities = [
-    {
-      icon: "account-plus",
-      title: "New Employee Added",
-      description: "John Doe joined Engineering",
-      time: "2 hours ago",
-    },
-    {
-      icon: "calendar-check",
-      title: "Leave Approved",
-      description: "Sarah's leave request approved",
-      time: "4 hours ago",
-    },
-    {
-      icon: "file-document-check",
-      title: "Payroll Processed",
-      description: "March 2026 payroll completed",
-      time: "1 day ago",
+      onPress: () => router.push("/(dashboard)/attendance"),
     },
   ];
 
@@ -239,20 +222,13 @@ export default function DashboardScreen() {
             <SkeletonLoader type="card" count={2} />
           ) : (
             <View style={styles.metricsGrid}>
-              {metrics.map((metric, index) => (
+              {metricCards.map((metric, index) => (
                 <View key={index} style={styles.metricCardWrapper}>
                   <MetricCard
                     label={metric.label}
                     value={metric.value}
                     icon={metric.icon}
-                    trend={metric.trend}
-                    onPress={() => {
-                      if (index === 0) router.push("/(dashboard)/employees");
-                      else if (index === 1)
-                        router.push("/(dashboard)/attendance");
-                      else if (index === 2) router.push("/(dashboard)/leaves");
-                      else router.push("/(dashboard)/payroll");
-                    }}
+                    onPress={metric.onPress}
                   />
                 </View>
               ))}
@@ -268,20 +244,20 @@ export default function DashboardScreen() {
               pressed && { opacity: 0.6 },
             ]}
           >
-            <View style={{ flexDirection: "row", gap: THEME.spacing.sm }}>
+            <View style={{ flexDirection: "row", gap: THEME.spacing.sm, marginBottom: THEME.spacing.sm }}>
               <Text style={{ fontSize: 20 }}>🤖</Text>
-              <Text style={styles.sectionTitle}>Today's Recommendations</Text>
+              <Text style={styles.sectionTitle}>AI Recommendations</Text>
             </View>
             <Text style={styles.aiText}>
-              • Engineering department attendance trending down
+              • View attendance trends and analytics in Insights tab
             </Text>
             <Text style={styles.aiText}>
-              • 3 employees eligible for performance bonuses
+              • Ask HR Assistant any HR-related questions
             </Text>
             <Text style={styles.aiText}>
-              • Recommend leave policy review for Q2
+              • Monitor payroll distribution and employee performance
             </Text>
-            <Pressable
+            <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -303,26 +279,49 @@ export default function DashboardScreen() {
                 size={18}
                 color={THEME.colors.primary}
               />
-            </Pressable>
+            </View>
           </Pressable>
 
-          {/* Recent Activity */}
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityFeed}>
-            {recentActivities.map((activity, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <MaterialCommunityIcons
-                    name={activity.icon as any}
-                    size={20}
-                    color={THEME.colors.primary}
-                  />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{activity.title}</Text>
-                  <Text style={styles.activityTime}>{activity.time}</Text>
-                </View>
-              </View>
+          {/* Quick Navigation */}
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: THEME.spacing.md }}>
+            {[
+              { icon: "account-plus", label: "Add Employee", route: "/(dashboard)/employees/add" as const },
+              { icon: "calendar-check", label: "Attendance", route: "/(dashboard)/attendance" as const },
+              { icon: "cash-multiple", label: "Payroll", route: "/(dashboard)/payroll" as const },
+              { icon: "calendar-plus", label: "Leave Request", route: "/(dashboard)/leaves" as const },
+            ].map((action, index) => (
+              <Pressable
+                key={index}
+                onPress={() => router.push(action.route)}
+                style={({ pressed }) => ({
+                  width: "48%",
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                  borderRadius: THEME.borderRadius.md,
+                  padding: THEME.spacing.md,
+                  alignItems: "center",
+                  gap: THEME.spacing.sm,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <MaterialCommunityIcons
+                  name={action.icon as any}
+                  size={28}
+                  color={THEME.colors.primary}
+                />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    textAlign: "center",
+                  }}
+                >
+                  {action.label}
+                </Text>
+              </Pressable>
             ))}
           </View>
         </View>

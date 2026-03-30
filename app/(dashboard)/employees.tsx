@@ -1,19 +1,24 @@
 /**
  * 👥 PREMIUM EMPLOYEES SCREEN - Manager View
  * Search, filters, employee cards with modern layout
+ * Backed by real Appwrite data
  */
 
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { FAB } from "@/src/components/ui/FAB";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
+import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
+import { employeeQueries } from "@/src/services/appwriteClient";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   Text,
@@ -23,71 +28,67 @@ import {
   ViewStyle,
 } from "react-native";
 
-interface Employee {
+interface EmployeeItem {
   id: string;
   name: string;
-  role: string;
+  position: string;
   department: string;
   email: string;
   phone: string;
-  status: "active" | "onleave" | "inactive";
-  avatar?: string;
+  status: "active" | "inactive" | "on_leave";
 }
 
 const FILTER_OPTIONS = [
   { label: "All", value: "all" },
   { label: "Active", value: "active" },
-  { label: "On Leave", value: "onleave" },
-  { label: "New", value: "new" },
+  { label: "On Leave", value: "on_leave" },
+  { label: "Inactive", value: "inactive" },
 ];
 
 export default function EmployeesScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-  // Mock data
-  const employees: Employee[] = [
-    {
-      id: "1",
-      name: "John Doe",
-      role: "Senior Developer",
-      department: "Engineering",
-      email: "john@company.com",
-      phone: "+1 234 567 8900",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Sarah Smith",
-      role: "Product Manager",
-      department: "Product",
-      email: "sarah@company.com",
-      phone: "+1 234 567 8901",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Mike Johnson",
-      role: "Designer",
-      department: "Design",
-      email: "mike@company.com",
-      phone: "+1 234 567 8902",
-      status: "onleave",
-    },
-  ];
+  const loadEmployees = useCallback(async () => {
+    if (!user?.companyId) return;
+    try {
+      setError("");
+      const data = await employeeQueries.getEmployees(user.companyId);
+      setEmployees(data as unknown as EmployeeItem[]);
+    } catch (err: any) {
+      setError(err.message || "Failed to load employees");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.companyId]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadEmployees();
+  };
 
   const filteredEmployees = employees.filter(
     (emp) =>
       (selectedFilter === "all" || emp.status === selectedFilter) &&
-      (emp.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        emp.email.toLowerCase().includes(searchText.toLowerCase()) ||
-        emp.department.toLowerCase().includes(searchText.toLowerCase())),
+      (emp.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        emp.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+        emp.department?.toLowerCase().includes(searchText.toLowerCase())),
   );
 
-  // Style definitions with proper types
+  // Style definitions
   const containerStyle: ViewStyle = {
     flex: 1,
     backgroundColor: isDark
@@ -167,7 +168,7 @@ export default function EmployeesScreen() {
   };
 
   const avatarTextStyle: TextStyle = {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     color: "#FFFFFF",
   };
@@ -213,26 +214,11 @@ export default function EmployeesScreen() {
     color: "#FFFFFF",
   };
 
-  const contactInfoStyle: ViewStyle = {
-    flexDirection: "row",
-    gap: THEME.spacing.sm,
-    flex: 1,
-  };
-
-  const contactIconStyle: ViewStyle = {
-    padding: THEME.spacing.xs,
-  };
-
-  const moreButtonStyle: ViewStyle = {
-    padding: THEME.spacing.sm,
-    marginLeft: "auto",
-  };
-
   const getStatusColor = (status: string): string => {
     switch (status) {
       case "active":
         return THEME.colors.success;
-      case "onleave":
+      case "on_leave":
         return THEME.colors.warning;
       case "inactive":
         return THEME.colors.danger;
@@ -245,16 +231,26 @@ export default function EmployeesScreen() {
     switch (status) {
       case "active":
         return "Active";
-      case "onleave":
+      case "on_leave":
         return "On Leave";
       case "inactive":
         return "Inactive";
       default:
-        return "Unknown";
+        return status;
     }
   };
 
-  const renderEmployeeCard = ({ item }: { item: Employee }) => (
+  const getInitials = (name: string): string => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const renderEmployeeCard = ({ item }: { item: EmployeeItem }) => (
     <PremiumCard
       interactive
       onPress={() => router.push(`/(dashboard)/employees/${item.id}`)}
@@ -262,23 +258,21 @@ export default function EmployeesScreen() {
     >
       <View style={employeeCardContentStyle}>
         <View style={avatarStyle}>
-          <Text style={avatarTextStyle}>
-            {item.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </Text>
+          <Text style={avatarTextStyle}>{getInitials(item.name)}</Text>
         </View>
 
         <View style={employeeInfoStyle}>
           <Text style={employeeNameStyle}>{item.name}</Text>
-          <Text style={employeeRoleStyle}>{item.role}</Text>
+          <Text style={employeeRoleStyle}>{item.position}</Text>
           <Text style={employeeDeptStyle}>{item.department}</Text>
         </View>
 
-        <Pressable style={moreButtonStyle} onPress={() => {}}>
+        <Pressable
+          style={{ padding: THEME.spacing.sm }}
+          onPress={() => router.push(`/(dashboard)/employees/${item.id}`)}
+        >
           <MaterialCommunityIcons
-            name="dots-vertical"
+            name="chevron-right"
             size={20}
             color={
               isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
@@ -299,30 +293,46 @@ export default function EmployeesScreen() {
           </Text>
         </View>
 
-        <View style={contactInfoStyle}>
-          <Pressable style={contactIconStyle}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={18}
-              color={THEME.colors.primary}
-            />
-          </Pressable>
-          <Pressable style={contactIconStyle}>
-            <MaterialCommunityIcons
-              name="phone-outline"
-              size={18}
-              color={THEME.colors.primary}
-            />
-          </Pressable>
+        <View style={{ flexDirection: "row", gap: THEME.spacing.sm, flex: 1 }}>
+          <MaterialCommunityIcons
+            name="email-outline"
+            size={16}
+            color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+          />
+          <Text
+            style={{
+              fontSize: 12,
+              color: isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary,
+              flex: 1,
+            }}
+            numberOfLines={1}
+          >
+            {item.email}
+          </Text>
         </View>
       </View>
     </PremiumCard>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={containerStyle}>
+        <View style={headerStyle}>
+          <Text style={headerTitleStyle}>Employees</Text>
+        </View>
+        <View style={{ paddingHorizontal: THEME.spacing.lg }}>
+          <SkeletonLoader type="card" count={4} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={containerStyle}>
       <View style={headerStyle}>
-        <Text style={headerTitleStyle}>Employees</Text>
+        <Text style={headerTitleStyle}>
+          Employees ({employees.length})
+        </Text>
         <SearchBar
           placeholder="Search employees..."
           value={searchText}
@@ -358,6 +368,12 @@ export default function EmployeesScreen() {
         ))}
       </ScrollView>
 
+      {error ? (
+        <View style={{ paddingHorizontal: THEME.spacing.lg, paddingBottom: THEME.spacing.md }}>
+          <Text style={{ color: THEME.colors.danger, fontSize: 14 }}>{error}</Text>
+        </View>
+      ) : null}
+
       {/* Employee List */}
       {filteredEmployees.length > 0 ? (
         <FlatList
@@ -366,6 +382,13 @@ export default function EmployeesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={listContainerStyle}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={THEME.colors.primary}
+            />
+          }
         />
       ) : (
         <View style={{ flex: 1 }}>

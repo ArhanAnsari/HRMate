@@ -1,3 +1,4 @@
+import { Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { Payslip, SalaryStructure } from "../types";
 import { databases } from "./appwrite";
@@ -15,7 +16,7 @@ export const payrollService = {
       const existing = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYROLL_STRUCTURE,
-        [`company_id="${companyId}"`],
+        [Query.equal("company_id", companyId)],
       );
 
       if (existing.documents.length > 0) {
@@ -56,7 +57,7 @@ export const payrollService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYROLL_STRUCTURE,
-        [`company_id="${companyId}"`],
+        [Query.equal("company_id", companyId)],
       );
 
       return response.documents as unknown as SalaryStructure[];
@@ -161,7 +162,11 @@ export const payrollService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYSLIPS,
-        [`company_id="${companyId}"`, `employee_id="${employeeId}"`],
+        [
+          Query.equal("company_id", companyId),
+          Query.equal("employee_id", employeeId),
+          Query.orderDesc("month"),
+        ],
       );
 
       return response.documents as unknown as Payslip[];
@@ -183,7 +188,10 @@ export const payrollService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYSLIPS,
-        [`employee_id="${employeeId}"`, `month="${monthKey}"`],
+        [
+          Query.equal("employee_id", employeeId),
+          Query.equal("month", monthKey),
+        ],
       );
 
       if (response.documents.length === 0) return null;
@@ -204,7 +212,7 @@ export const payrollService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYSLIPS,
-        [`company_id="${companyId}"`],
+        [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
       const payslips = response.documents as unknown as Payslip[];

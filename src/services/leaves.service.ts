@@ -1,3 +1,4 @@
+import { Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { LeaveCreateInput, LeaveRequest } from "../types";
 import { databases } from "./appwrite";
@@ -44,7 +45,11 @@ export const leavesService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        [`company_id="${companyId}"`, `employee_id="${employeeId}"`],
+        [
+          Query.equal("company_id", companyId),
+          Query.equal("employee_id", employeeId),
+          Query.orderDesc("$createdAt"),
+        ],
       );
 
       return response.documents as unknown as LeaveRequest[];
@@ -90,7 +95,11 @@ export const leavesService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        [`company_id="${companyId}"`, `status="pending"`],
+        [
+          Query.equal("company_id", companyId),
+          Query.equal("status", "pending"),
+          Query.orderDesc("$createdAt"),
+        ],
       );
 
       return response.documents as unknown as LeaveRequest[];
@@ -168,7 +177,7 @@ export const leavesService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        [`company_id="${companyId}"`],
+        [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
       const leaves = response.documents as unknown as LeaveRequest[];

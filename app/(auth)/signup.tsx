@@ -1,8 +1,8 @@
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -29,8 +29,8 @@ export default function SignupScreen() {
     password: "",
     confirmPassword: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
+  const { signup, isLoading, error } = useAuthStore();
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -88,30 +88,38 @@ export default function SignupScreen() {
       !formData.password ||
       !formData.companyName
     ) {
-      setError("Please fill in all fields");
+      setLocalError("Please fill in all fields");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setLocalError("Passwords do not match");
+      return;
+    }
+    if (formData.password.length < 8) {
+      setLocalError("Password must be at least 8 characters");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    setLocalError("");
 
     try {
-      await SecureStore.setItemAsync("authToken", "mock-token-" + Date.now());
-      router.replace("/(dashboard)");
-    } catch (err: any) {
-      setError(err.message || "Signup failed");
-    } finally {
-      setLoading(false);
+      await signup(
+        formData.email.trim().toLowerCase(),
+        formData.password,
+        formData.name.trim(),
+        formData.companyName.trim(),
+      );
+      // Navigation handled by _layout.tsx auth guard
+    } catch {
+      // Error already set in auth store
     }
   };
 
   const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const displayError = localError || error;
 
   return (
     <SafeAreaView style={containerStyle}>
@@ -139,7 +147,9 @@ export default function SignupScreen() {
           <Text style={titleStyle}>Create Account</Text>
           <Text style={subtitleStyle}>Get started with HRMate today</Text>
 
-          {error ? <Text style={errorStyle}>{error}</Text> : null}
+          {displayError ? (
+            <Text style={errorStyle}>{displayError}</Text>
+          ) : null}
 
           <TextInput
             placeholder="Full Name"
@@ -149,7 +159,7 @@ export default function SignupScreen() {
             value={formData.name}
             onChangeText={(text) => updateField("name", text)}
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <TextInput
@@ -160,8 +170,9 @@ export default function SignupScreen() {
             value={formData.email}
             onChangeText={(text) => updateField("email", text)}
             keyboardType="email-address"
+            autoCapitalize="none"
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <TextInput
@@ -172,11 +183,11 @@ export default function SignupScreen() {
             value={formData.companyName}
             onChangeText={(text) => updateField("companyName", text)}
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <TextInput
-            placeholder="Password"
+            placeholder="Password (min 8 characters)"
             placeholderTextColor={
               isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
             }
@@ -184,7 +195,7 @@ export default function SignupScreen() {
             onChangeText={(text) => updateField("password", text)}
             secureTextEntry
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <TextInput
@@ -196,14 +207,14 @@ export default function SignupScreen() {
             onChangeText={(text) => updateField("confirmPassword", text)}
             secureTextEntry
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <PrimaryButton
-            label={loading ? "Creating Account..." : "Sign Up"}
+            label={isLoading ? "Creating Account..." : "Sign Up"}
             onPress={handleSignup}
-            disabled={loading}
-            loading={loading}
+            disabled={isLoading}
+            loading={isLoading}
             style={{
               marginBottom: THEME.spacing.lg,
               marginTop: THEME.spacing.md,
@@ -230,5 +241,3 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
-
-// End of cleanup - old code removed

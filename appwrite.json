@@ -1,0 +1,1463 @@
+{
+  "projectId": "69ca44f20000ebf91141",
+  "projectName": "HRMate",
+  "endpoint": "https://fra.cloud.appwrite.io/v1",
+  "settings": {
+    "services": {
+      "account": true,
+      "avatars": true,
+      "databases": true,
+      "locale": true,
+      "health": true,
+      "storage": true,
+      "teams": true,
+      "users": true,
+      "sites": true,
+      "functions": true,
+      "graphql": true,
+      "messaging": true
+    },
+    "auth": {
+      "methods": {
+        "jwt": true,
+        "phone": true,
+        "invites": true,
+        "anonymous": true,
+        "email-otp": true,
+        "magic-url": true,
+        "email-password": true
+      },
+      "security": {
+        "duration": 31536000,
+        "limit": 0,
+        "sessionsLimit": 10,
+        "passwordHistory": 0,
+        "passwordDictionary": false,
+        "personalDataCheck": false,
+        "sessionAlerts": false,
+        "mockNumbers": []
+      }
+    }
+  },
+  "tablesDB": [
+    {
+      "$id": "69ca4ebb0005b6c43a63",
+      "name": "HRMate DB",
+      "enabled": true
+    }
+  ],
+  "tables": [
+    {
+      "$id": "companies_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "companies_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "industry",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employees_count",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "subscription_tier",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "billing_email",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "subscription_starts",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "subscription_ends",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "logo_id",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "settings",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_by",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "name_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["name"]
+        },
+        {
+          "key": "subscription_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["subscription_tier"]
+        }
+      ]
+    },
+    {
+      "$id": "users_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "users_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "email",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "role",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "full_name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "phone",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 32,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "department",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "profile_image",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "is_active",
+          "type": "boolean",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "last_login",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "preferences",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "email_index",
+          "type": "unique",
+          "orders": ["ASC"],
+          "columns": ["email"]
+        },
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "role_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["role"]
+        }
+      ]
+    },
+    {
+      "$id": "employees_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "employees_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "first_name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "last_name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "email",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "phone",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 32,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "position",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "department",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "joining_date",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "date_of_birth",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employment_type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "manager_id",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "salary_structure_id",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "base_salary",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "pan_number",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "aadhar_number",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "bank_account",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "address",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "profile_image",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "status_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["status"]
+        },
+        {
+          "key": "email_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["email"]
+        }
+      ]
+    },
+    {
+      "$id": "attendance_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "attendance_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employee_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "date",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "check_in_time",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "check_out_time",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "duration_hours",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "location",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "notes",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "employee_date_index",
+          "type": "key",
+          "orders": ["ASC", "ASC"],
+          "columns": ["employee_id", "date"]
+        },
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        }
+      ]
+    },
+    {
+      "$id": "leaves_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "leaves_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employee_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "leave_type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "start_date",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "end_date",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "number_of_days",
+          "type": "integer",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "reason",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "approved_by",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "approval_date",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "comments",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "employee_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["employee_id"]
+        },
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "status_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["status"]
+        }
+      ]
+    },
+    {
+      "$id": "payroll_structure_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "payroll_structure_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employee_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "basic_salary",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "hra",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "dearness_allowance",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "conveyance",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "other_allowances",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "pf",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "professional_tax",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "income_tax",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "other_deductions",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "employee_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["employee_id"]
+        }
+      ]
+    },
+    {
+      "$id": "payslips_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "payslips_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employee_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "month",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "year",
+          "type": "integer",
+          "min": 2000,
+          "max": 2100,
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "gross_salary",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "basic_salary",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "allowances",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "deductions",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "net_salary",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "breakdown",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "pdf_url",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "employee_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["employee_id"]
+        },
+        {
+          "key": "month_year_index",
+          "type": "key",
+          "orders": ["ASC", "ASC"],
+          "columns": ["month", "year"]
+        }
+      ]
+    },
+    {
+      "$id": "payroll_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "payroll_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "month",
+          "type": "integer",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "year",
+          "type": "integer",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "payslips",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "total_amount",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "processed_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "month_year_index",
+          "type": "key",
+          "orders": ["ASC", "ASC"],
+          "columns": ["month", "year"]
+        }
+      ]
+    },
+    {
+      "$id": "documents_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "documents_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "employee_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "document_type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "file_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "file_name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "file_url",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "employee_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["employee_id"]
+        }
+      ]
+    },
+    {
+      "$id": "notifications_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "notifications_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "message",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "read",
+          "type": "boolean",
+          "required": true,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "user_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["user_id"]
+        },
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        }
+      ]
+    },
+    {
+      "$id": "audit_logs_collection",
+      "$permissions": [],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "audit_logs_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "company_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "action",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "resource_type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "resource_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "changes",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "ip_address",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "company_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["company_id"]
+        },
+        {
+          "key": "user_index",
+          "type": "key",
+          "orders": ["ASC"],
+          "columns": ["user_id"]
+        }
+      ]
+    }
+  ],
+  "buckets": [
+    {
+      "$id": "employee_documents",
+      "name": "Employee Documents",
+      "enabled": true,
+      "maximumFileSize": 52428800,
+      "allowedFileExtensions": [
+        "jpg",
+        "jpeg",
+        "png",
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "csv"
+      ]
+    },
+    {
+      "$id": "payslips",
+      "name": "Payslips",
+      "enabled": true,
+      "maximumFileSize": 10485760,
+      "allowedFileExtensions": [
+        "jpg",
+        "jpeg",
+        "png",
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "csv"
+      ]
+    },
+    {
+      "$id": "company_logos",
+      "name": "Company Logos",
+      "enabled": true,
+      "maximumFileSize": 5242880,
+      "allowedFileExtensions": [
+        "jpg",
+        "jpeg",
+        "png",
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "csv"
+      ]
+    }
+  ],
+  "teams": [],
+  "topics": []
+}

@@ -49,9 +49,12 @@ export const useAppStore = create<AppStore>()(
       setGlobalLoading: (loading) => set({ isGlobalLoading: loading }),
 
       addNotification: (notification) => {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 11);
+        const counter = (Math.random() * 0xffff) | 0;
         const newNotification: Notification = {
           ...notification,
-          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `notif_${timestamp}_${random}_${counter}`,
           isRead: false,
           createdAt: new Date().toISOString(),
         };

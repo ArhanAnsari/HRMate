@@ -8,6 +8,8 @@ import {
   payrollQueries,
 } from "./appwriteClient";
 
+const DEFAULT_ANNUAL_LEAVE_DAYS = 20;
+
 export const payrollService = {
   async getPayrollStats(): Promise<any> {
     const companyId = await getCurrentUserCompanyId();
@@ -31,7 +33,7 @@ export const payrollService = {
 export const leaveService = {
   async getLeaveStats(employeeId?: string): Promise<any> {
     if (!employeeId) {
-      return { totalDays: 20, usedDays: 0, remainingDays: 20, pendingRequests: 0 };
+      return { totalDays: DEFAULT_ANNUAL_LEAVE_DAYS, usedDays: 0, remainingDays: DEFAULT_ANNUAL_LEAVE_DAYS, pendingRequests: 0 };
     }
     return leaveQueries.getLeaveStats(employeeId);
   },

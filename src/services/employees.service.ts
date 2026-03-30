@@ -143,18 +143,18 @@ export const employeeService = {
     filters: { department?: string; status?: string },
   ): Promise<Employee[]> {
     try {
-      const queries: string[] = [Query.equal("company_id", companyId)];
+      const queryFilters: string[] = [Query.equal("company_id", companyId)];
       if (filters.department) {
-        queries.push(Query.equal("department", filters.department));
+        queryFilters.push(Query.equal("department", filters.department));
       }
       if (filters.status) {
-        queries.push(Query.equal("status", filters.status));
+        queryFilters.push(Query.equal("status", filters.status));
       }
 
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        queries,
+        queryFilters,
       );
 
       return response.documents as unknown as Employee[];

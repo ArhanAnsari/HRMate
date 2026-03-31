@@ -6,16 +6,16 @@
 import { THEME } from "@/src/theme";
 import React from "react";
 import {
-    Pressable,
-    StyleProp,
-    useColorScheme,
-    View,
-    ViewStyle,
+  Pressable,
+  StyleProp,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from "react-native";
 
 interface PremiumCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   borderless?: boolean;
   highlight?: boolean;
   actionable?: boolean;

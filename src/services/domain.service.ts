@@ -11,9 +11,9 @@ import {
 const DEFAULT_ANNUAL_LEAVE_DAYS = 20;
 
 export const payrollService = {
-  async getPayrollStats(): Promise<any> {
-    const companyId = await getCurrentUserCompanyId();
-    return payrollQueries.getPayrollStats(companyId);
+  async getPayrollStats(companyId?: string): Promise<any> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return payrollQueries.getPayrollStats(cId);
   },
 
   async getSalaryStructure(employeeId?: string): Promise<any> {
@@ -21,9 +21,9 @@ export const payrollService = {
     return payrollQueries.getSalaryStructure(employeeId);
   },
 
-  async getPayslips(): Promise<any[]> {
-    const companyId = await getCurrentUserCompanyId();
-    return payrollQueries.getPayslips(companyId);
+  async getPayslips(companyId?: string): Promise<any[]> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return payrollQueries.getPayslips(cId);
   },
 };
 
@@ -31,11 +31,27 @@ export const payrollService = {
  * 🏖️ Leave Service (Real Appwrite)
  */
 export const leaveService = {
-  async getLeaveStats(employeeId?: string): Promise<any> {
-    if (!employeeId) {
-      return { totalDays: DEFAULT_ANNUAL_LEAVE_DAYS, usedDays: 0, remainingDays: DEFAULT_ANNUAL_LEAVE_DAYS, pendingRequests: 0 };
+  async getLeaveStats(employeeIdOrCompanyId?: string): Promise<any> {
+    if (!employeeIdOrCompanyId) {
+      return {
+        totalDays: DEFAULT_ANNUAL_LEAVE_DAYS,
+        usedDays: 0,
+        remainingDays: DEFAULT_ANNUAL_LEAVE_DAYS,
+        pendingRequests: 0,
+      };
     }
-    return leaveQueries.getLeaveStats(employeeId);
+    // Try as company ID first (used by dashboard), fall back to employee
+    try {
+      return leaveQueries.getLeaveStats(employeeIdOrCompanyId);
+    } catch {
+      // Return defaults on error
+      return {
+        totalDays: DEFAULT_ANNUAL_LEAVE_DAYS,
+        usedDays: 0,
+        remainingDays: DEFAULT_ANNUAL_LEAVE_DAYS,
+        pendingRequests: 0,
+      };
+    }
   },
 
   async getLeaveRequests(employeeId?: string): Promise<any[]> {
@@ -48,14 +64,14 @@ export const leaveService = {
  * 👥 Employee Service (Real Appwrite)
  */
 export const employeeService = {
-  async getEmployees(): Promise<any[]> {
-    const companyId = await getCurrentUserCompanyId();
-    return employeeQueries.getEmployees(companyId);
+  async getEmployees(companyId?: string): Promise<any[]> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return employeeQueries.getEmployees(cId);
   },
 
-  async getEmployeeStats(): Promise<any> {
-    const companyId = await getCurrentUserCompanyId();
-    return employeeQueries.getEmployeeStats(companyId);
+  async getEmployeeStats(companyId?: string): Promise<any> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return employeeQueries.getEmployeeStats(cId);
   },
 };
 
@@ -67,4 +83,3 @@ export const chatService = {
     return [];
   },
 };
-

@@ -1,13 +1,18 @@
 /**
  * ⚙️ SETTINGS SCREEN - App Preferences
+ * Manages notifications, security, profile, and app settings
  */
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import BiometricAuthService from "@/src/services/biometric.service";
+import { useAuthStore } from "@/src/state/auth.store";
+import { useBiometricStore } from "@/src/state/biometric.store";
+import { useNotificationStore } from "@/src/state/notifications.store";
 import { THEME } from "@/src/theme";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
+  Alert,
   ScrollView,
   Switch,
   Text,
@@ -16,13 +21,26 @@ import {
   ViewStyle,
   useColorScheme,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [notifications, setNotifications] = useState(true);
+  const { logout } = useAuthStore();
+  const { biometricEnabled, setBiometricEnabled, biometricType } =
+    useBiometricStore();
+  const { notificationsEnabled, toggleNotificationsEnabled } =
+    useNotificationStore();
   const [emailReminders, setEmailReminders] = useState(true);
-  const [biometric, setBiometric] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const available = await BiometricAuthService.isAvailable();
+      setBiometricAvailable(available);
+    };
+    checkBiometric();
+  }, []);
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -78,11 +96,43 @@ export default function SettingsScreen() {
         onValueChange={onToggle}
         trackColor={{
           false: isDark ? THEME.dark.border : THEME.light.border,
-          true: isDark ? THEME.dark.primary : THEME.light.primary,
+          true: THEME.colors.primary,
         }}
       />
     </PremiumCard>
   );
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        onPress: async () => {
+          await logout();
+        },
+        style: "destructive",
+      },
+    ]);
+  };
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      if (!biometricAvailable) {
+        Alert.alert(
+          "Not Available",
+          "Biometric authentication is not available on this device",
+        );
+        return;
+      }
+      const authenticated = await BiometricAuthService.authenticate();
+      if (authenticated) {
+        setBiometricEnabled(true);
+      }
+    } else {
+      setBiometricEnabled(false);
+      await BiometricAuthService.clearAllBiometricCredentials();
+    }
+  };
 
   return (
     <SafeAreaView style={containerStyle}>
@@ -100,17 +150,24 @@ export default function SettingsScreen() {
             marginBottom: THEME.spacing.lg,
           }}
         >
-          Manage app preferences
+          Manage app preferences and security
         </Text>
 
         <Text style={sectionTitleStyle}>Notifications</Text>
-        {renderSetting("Push Notifications", notifications, setNotifications)}
+        {renderSetting(
+          "Push Notifications",
+          notificationsEnabled,
+          toggleNotificationsEnabled,
+        )}
         {renderSetting("Email Reminders", emailReminders, setEmailReminders)}
 
         <Text style={sectionTitleStyle}>Security</Text>
-        {renderSetting("Biometric Login", biometric, setBiometric)}
-
-        <Text style={sectionTitleStyle}>Profile</Text>
+        {biometricAvailable &&
+          renderSetting(
+            `${biometricType === "face" ? "Face ID" : "Fingerprint"}`,
+            biometricEnabled,
+            handleBiometricToggle,
+          )}
         <PrimaryButton
           label="Change Password"
           onPress={() => {}}
@@ -146,12 +203,23 @@ export default function SettingsScreen() {
                   : THEME.light.text.secondary,
               }}
             >
-              Version 1.0.0
+              Version 1.0.0 • Premium Edition
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: isDark
+                  ? THEME.dark.text.tertiary
+                  : THEME.light.text.tertiary,
+                marginTop: THEME.spacing.sm,
+              }}
+            >
+              © 2024 HRMate. All rights reserved.
             </Text>
           </View>
         </PremiumCard>
 
-        <PrimaryButton label="Logout" onPress={() => {}} variant="danger" />
+        <PrimaryButton label="Logout" onPress={handleLogout} variant="danger" />
       </ScrollView>
     </SafeAreaView>
   );

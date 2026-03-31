@@ -1,20 +1,21 @@
+import { Logo } from "@/src/components/ui/Logo";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  TextStyle,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-  ViewStyle,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    Text,
+    TextInput,
+    TextStyle,
+    TouchableOpacity,
+    useColorScheme,
+    View,
+    ViewStyle,
 } from "react-native";
 
 export default function LoginScreen() {
@@ -108,12 +109,12 @@ export default function LoginScreen() {
           contentContainerStyle={contentStyle}
           showsVerticalScrollIndicator={false}
         >
+          <Logo size="lg" containerStyle={{ marginBottom: THEME.spacing.xl }} />
+
           <Text style={titleStyle}>Welcome Back</Text>
           <Text style={subtitleStyle}>Enter your credentials to continue</Text>
 
-          {displayError ? (
-            <Text style={errorStyle}>{displayError}</Text>
-          ) : null}
+          {displayError ? <Text style={errorStyle}>{displayError}</Text> : null}
 
           <TextInput
             placeholder="Email"

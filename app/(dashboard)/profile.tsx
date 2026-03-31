@@ -8,14 +8,14 @@ import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
-  SafeAreaView,
   ScrollView,
   Text,
   TextStyle,
   View,
   ViewStyle,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();

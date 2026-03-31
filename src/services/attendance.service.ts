@@ -28,37 +28,38 @@ export interface TrendData {
 
 export const attendanceService = {
   // Get today's attendance statistics
-  async getTodayStats(): Promise<AttendanceStats> {
-    const companyId = await getCurrentUserCompanyId();
-    return attendanceQueries.getTodayStats(companyId);
+  async getTodayStats(companyId?: string): Promise<AttendanceStats> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return attendanceQueries.getTodayStats(cId);
   },
 
   // Get attendance records for today
-  async getTodayRecords(): Promise<AttendanceRecord[]> {
-    const companyId = await getCurrentUserCompanyId();
-    return attendanceQueries.getTodayRecords(companyId) as Promise<
+  async getTodayRecords(companyId?: string): Promise<AttendanceRecord[]> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return attendanceQueries.getTodayRecords(cId) as Promise<
       AttendanceRecord[]
     >;
   },
 
   // Get weekly trend data
-  async getWeeklyTrend(): Promise<TrendData[]> {
-    const companyId = await getCurrentUserCompanyId();
-    return attendanceQueries.getWeeklyTrend(companyId);
+  async getWeeklyTrend(companyId?: string): Promise<TrendData[]> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return attendanceQueries.getWeeklyTrend(cId);
   },
 
   // Get monthly trend data
-  async getMonthlyTrend(): Promise<TrendData[]> {
-    const companyId = await getCurrentUserCompanyId();
-    return attendanceQueries.getMonthlyTrend(companyId);
+  async getMonthlyTrend(companyId?: string): Promise<TrendData[]> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return attendanceQueries.getMonthlyTrend(cId);
   },
 
   // Check in employee
   async checkIn(
     employeeId: string,
+    companyId?: string,
   ): Promise<{ success: boolean; time: string }> {
-    const companyId = await getCurrentUserCompanyId();
-    return attendanceQueries.checkIn(employeeId, companyId);
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return attendanceQueries.checkIn(employeeId, cId);
   },
 
   // Check out employee

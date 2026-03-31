@@ -1,3 +1,4 @@
+import { Logo } from "@/src/components/ui/Logo";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
@@ -5,17 +6,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  TextStyle,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-  ViewStyle,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    Text,
+    TextInput,
+    TextStyle,
+    TouchableOpacity,
+    useColorScheme,
+    View,
+    ViewStyle,
 } from "react-native";
 
 export default function SignupScreen() {
@@ -144,12 +145,12 @@ export default function SignupScreen() {
             />
           </TouchableOpacity>
 
+          <Logo size="md" containerStyle={{ marginBottom: THEME.spacing.md }} />
+
           <Text style={titleStyle}>Create Account</Text>
           <Text style={subtitleStyle}>Get started with HRMate today</Text>
 
-          {displayError ? (
-            <Text style={errorStyle}>{displayError}</Text>
-          ) : null}
+          {displayError ? <Text style={errorStyle}>{displayError}</Text> : null}
 
           <TextInput
             placeholder="Full Name"

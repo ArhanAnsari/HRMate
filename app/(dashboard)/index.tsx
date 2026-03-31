@@ -16,13 +16,13 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface DashboardMetrics {
   totalEmployees: number;
@@ -244,7 +244,13 @@ export default function DashboardScreen() {
               pressed && { opacity: 0.6 },
             ]}
           >
-            <View style={{ flexDirection: "row", gap: THEME.spacing.sm, marginBottom: THEME.spacing.sm }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: THEME.spacing.sm,
+                marginBottom: THEME.spacing.sm,
+              }}
+            >
               <Text style={{ fontSize: 20 }}>🤖</Text>
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
             </View>
@@ -284,12 +290,34 @@ export default function DashboardScreen() {
 
           {/* Quick Navigation */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: THEME.spacing.md }}>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: THEME.spacing.md,
+            }}
+          >
             {[
-              { icon: "account-plus", label: "Add Employee", route: "/(dashboard)/employees/add" as const },
-              { icon: "calendar-check", label: "Attendance", route: "/(dashboard)/attendance" as const },
-              { icon: "cash-multiple", label: "Payroll", route: "/(dashboard)/payroll" as const },
-              { icon: "calendar-plus", label: "Leave Request", route: "/(dashboard)/leaves" as const },
+              {
+                icon: "account-plus",
+                label: "Add Employee",
+                route: "/(dashboard)/employees/add" as const,
+              },
+              {
+                icon: "calendar-check",
+                label: "Attendance",
+                route: "/(dashboard)/attendance" as const,
+              },
+              {
+                icon: "cash-multiple",
+                label: "Payroll",
+                route: "/(dashboard)/payroll" as const,
+              },
+              {
+                icon: "calendar-plus",
+                label: "Leave Request",
+                route: "/(dashboard)/leaves" as const,
+              },
             ].map((action, index) => (
               <Pressable
                 key={index}
@@ -315,7 +343,9 @@ export default function DashboardScreen() {
                   style={{
                     fontSize: 13,
                     fontWeight: "500",
-                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    color: isDark
+                      ? THEME.dark.text.primary
+                      : THEME.light.text.primary,
                     textAlign: "center",
                   }}
                 >

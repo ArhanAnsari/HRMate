@@ -1,24 +1,78 @@
 /**
- * 💡 INSIGHTS SCREEN - Premium Dashboard
+ * 💡 INSIGHTS SCREEN - AI-Powered HR Analytics
+ * Real-time insights, trends, and smart recommendations powered by Gemini AI
  */
 
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
+import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
+import { AttendanceChart, PayrollChart, LeaveChart } from "@/src/components/Charts";
 import { THEME } from "@/src/theme";
-import React from "react";
+import GeminiAIService from "@/src/services/gemini-ai.service";
+import { useAuthStore } from "@/src/state/auth.store";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   Text,
   TextStyle,
+  TouchableOpacity,
   View,
   ViewStyle,
   useColorScheme,
+  Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InsightsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
+  
+  const [loading, setLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState("");
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [metrics] = useState({
+    attendanceRate: 92,
+    avgSalary: 65000,
+    totalEmployees: 30,
+    activeEmployees: 28,
+    onLeaveCount: 2,
+    pendingLeavesCount: 5,
+  });
+
+  useEffect(() => {
+    loadAIInsights();
+  }, []);
+
+  const loadAIInsights = async () => {
+    try {
+      setLoading(true);
+      const [insights, recs] = await Promise.all([
+        GeminiAIService.generateAIInsights({
+          totalEmployees: metrics.totalEmployees,
+          activeEmployees: metrics.activeEmployees,
+          attendanceRate: metrics.attendanceRate,
+          avgSalary: metrics.avgSalary,
+          onLeaveCount: metrics.onLeaveCount,
+          pendingLeavesCount: metrics.pendingLeavesCount,
+        }),
+        GeminiAIService.getSmartRecommendations({
+          lowAttendanceEmployees: 3,
+          highTurnoverRate: 8,
+          pendingLeavesCount: metrics.pendingLeavesCount,
+          unprocessedPayroll: 0,
+        }),
+      ]);
+
+      setAiInsights(insights);
+      setRecommendations(recs);
+    } catch (error) {
+      console.error("Failed to load AI insights:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -39,199 +93,162 @@ export default function InsightsScreen() {
     marginBottom: THEME.spacing.sm,
   };
 
+  const sectionTitleStyle: TextStyle = {
+    fontSize: 18,
+    fontWeight: "700",
+    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+    marginBottom: THEME.spacing.md,
+    marginTop: THEME.spacing.lg,
+  };
+
   return (
     <SafeAreaView style={containerStyle}>
       <ScrollView
         contentContainerStyle={contentStyle}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={titleStyle}>Insights</Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: isDark
-              ? THEME.dark.text.secondary
-              : THEME.light.text.secondary,
-            marginBottom: THEME.spacing.lg,
-          }}
-        >
-          AI-powered HR analytics
-        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View>
+            <Text style={titleStyle}>Insights</Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: isDark
+                  ? THEME.dark.text.secondary
+                  : THEME.light.text.secondary,
+              }}
+            >
+              AI-powered HR analytics
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={loadAIInsights}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: THEME.colors.primary,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <MaterialCommunityIcons name="refresh" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
+        {/* AI Generated Insights */}
+        <Text style={sectionTitleStyle}>🤖 AI Summary</Text>
+        {loading ? (
+          <SkeletonLoader type="card" count={1} />
+        ) : (
+          <PremiumCard style={{ marginBottom: THEME.spacing.lg }}>
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 22,
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              }}
+            >
+              {aiInsights}
+            </Text>
+          </PremiumCard>
+        )}
+
+        {/* Key Metrics */}
+        <Text style={sectionTitleStyle}>📊 Key Metrics</Text>
         <View style={{ gap: THEME.spacing.md, marginBottom: THEME.spacing.lg }}>
           <MetricCard
             label="Avg Attendance"
-            value="92%"
+            value={`${metrics.attendanceRate}%`}
             trend={{ direction: "up", percentage: 5 }}
           />
           <MetricCard
             label="Active Employees"
-            value="28"
+            value={String(metrics.activeEmployees)}
             trend={{ direction: "up", percentage: 2 }}
           />
           <MetricCard
             label="Pending Requests"
-            value="5"
+            value={String(metrics.pendingLeavesCount)}
             trend={{ direction: "down", percentage: 3 }}
           />
           <MetricCard
             label="On Leave Today"
-            value="2"
+            value={String(metrics.onLeaveCount)}
             trend={{ direction: "neutral", percentage: 0 }}
           />
         </View>
 
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: "600",
-            color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-            marginBottom: THEME.spacing.md,
-          }}
-        >
-          Department Insights
-        </Text>
-
-        <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: THEME.spacing.md,
+        {/* Charts - Attendance Trend */}
+        <Text style={sectionTitleStyle}>📈 Attendance Trends</Text>
+        <PremiumCard style={{ marginBottom: THEME.spacing.lg, alignItems: "center", padding: 0 }}>
+          <AttendanceChart
+            data={{
+              dates: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+              attendanceRates: [88, 90, 92, 89, 95, 85],
             }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-              }}
-            >
-              Operations
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: THEME.colors.primary,
-              }}
-            >
-              92%
-            </Text>
-          </View>
-          <View
-            style={{
-              height: 6,
-              backgroundColor: isDark ? THEME.dark.border : THEME.light.border,
-              borderRadius: 3,
-              overflow: "hidden",
-            }}
-          >
-            <View
-              style={{
-                width: "92%",
-                height: "100%",
-                backgroundColor: THEME.colors.primary,
-              }}
-            />
-          </View>
+          />
         </PremiumCard>
 
-        <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: THEME.spacing.md,
+        {/* Charts - Leave Distribution */}
+        <Text style={sectionTitleStyle}>🗓️ Leave Distribution</Text>
+        <PremiumCard style={{ marginBottom: THEME.spacing.lg, alignItems: "center", padding: 0 }}>
+          <LeaveChart
+            data={{
+              approved: 15,
+              pending: 5,
+              rejected: 2,
             }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-              }}
-            >
-              Engineering
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: THEME.colors.success,
-              }}
-            >
-              95%
-            </Text>
-          </View>
-          <View
-            style={{
-              height: 6,
-              backgroundColor: isDark ? THEME.dark.border : THEME.light.border,
-              borderRadius: 3,
-              overflow: "hidden",
-            }}
-          >
-            <View
-              style={{
-                width: "95%",
-                height: "100%",
-                backgroundColor: THEME.colors.success,
-              }}
-            />
-          </View>
+          />
         </PremiumCard>
 
-        <PremiumCard>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: THEME.spacing.md,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-              }}
-            >
-              HR
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: THEME.colors.warning,
-              }}
-            >
-              88%
-            </Text>
+        {/* Smart Recommendations */}
+        <Text style={sectionTitleStyle}>💡 Smart Recommendations</Text>
+        {loading ? (
+          <SkeletonLoader type="text" count={3} />
+        ) : (
+          <View style={{ gap: THEME.spacing.md, marginBottom: THEME.spacing.lg }}>
+            {recommendations.map((rec, idx) => (
+              <PremiumCard
+                key={idx}
+                style={{
+                  flexDirection: "row",
+                  gap: THEME.spacing.md,
+                  alignItems: "flex-start",
+                }}
+              >
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: THEME.colors.primary,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="lightbulb"
+                    size={16}
+                    color="#fff"
+                  />
+                </View>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                  }}
+                >
+                  {rec}
+                </Text>
+              </PremiumCard>
+            ))}
           </View>
-          <View
-            style={{
-              height: 6,
-              backgroundColor: isDark ? THEME.dark.border : THEME.light.border,
-              borderRadius: 3,
-              overflow: "hidden",
-            }}
-          >
-            <View
-              style={{
-                width: "88%",
-                height: "100%",
-                backgroundColor: THEME.colors.warning,
-              }}
-            />
-          </View>
-        </PremiumCard>
+        )}
+
+        <View style={{ height: THEME.spacing.xl }} />
       </ScrollView>
     </SafeAreaView>
   );

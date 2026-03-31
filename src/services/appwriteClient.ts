@@ -9,20 +9,38 @@ import { account, databases, handleAppwriteError } from "./appwrite";
 
 /**
  * Get current user's company ID from session
+ * DEPRECATED: Use getCompanyIdSync() from useCompanyId hook instead
+ * This function is kept for backward compatibility but may not work due to permission restrictions
  */
 export const getCurrentUserCompanyId = async (): Promise<string> => {
   try {
     const authUser = await account.get();
-    const users = await databases.listDocuments(
-      APPWRITE_CONFIG.DATABASE_ID,
-      DB_IDS.USERS,
-      [Query.equal("email", authUser.email)],
-    );
 
-    if (users.documents.length > 0) {
-      return users.documents[0].company_id as string;
+    // Check if company ID is stored in prefs
+    if (authUser.prefs?.companyId) {
+      return authUser.prefs.companyId as string;
     }
-    throw new Error("User not found in database");
+
+    // Try database query as fallback
+    try {
+      const users = await databases.listDocuments(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.USERS,
+        [Query.equal("email", authUser.email), Query.limit(1)],
+      );
+
+      if (users.documents.length > 0) {
+        const companyId =
+          users.documents[0].company_id || users.documents[0].companyId;
+        if (companyId) return companyId as string;
+      }
+    } catch (dbError) {
+      console.warn("Database query failed:", handleAppwriteError(dbError));
+    }
+
+    throw new Error(
+      "Company ID not found. User may not be properly configured.",
+    );
   } catch (error) {
     throw new Error(`Failed to get company ID: ${handleAppwriteError(error)}`);
   }

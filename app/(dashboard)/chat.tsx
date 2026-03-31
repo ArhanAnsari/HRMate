@@ -1,17 +1,17 @@
 /**
- * 💬 CHAT SCREEN - Team Communication
+ * 🤖 AI ASSISTANT SCREEN - Interactive HR Chat
+ * AI-powered chatbot for HR queries, insights, and recommendations
  */
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
-import { chatService } from "@/src/services/domain.service";
 import { THEME } from "@/src/theme";
+import GeminiAIService from "@/src/services/gemini-ai.service";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  RefreshControl,
   SafeAreaView,
   Text,
   TextInput,
@@ -20,41 +20,89 @@ import {
   View,
   ViewStyle,
   useColorScheme,
+  ActivityIndicator,
 } from "react-native";
 
-export default function ChatScreen() {
+interface Message {
+  id: string;
+  sender: "user" | "ai";
+  content: string;
+  timestamp: number;
+}
+
+const QUICK_PROMPTS = [
+  "How can I improve attendance?",
+  "Analyze our payroll trends",
+  "What are typical HR metrics?",
+  "Employee engagement tips",
+];
+
+export default function AIAssistantScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      sender: "ai",
+      content: "Hi! I'm HRMate AI Assistant. I can help you with HR insights, employee analytics, and recommendations. What would you like to know?",
+      timestamp: Date.now(),
+    },
+  ]);
+  const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
+  const [conversationHistory, setConversationHistory] = useState<
+    Array<{ role: string; content: string }>
+  >([]);
 
-  useEffect(() => {
-    loadMessages();
-  }, []);
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim()) return;
 
-  const loadMessages = async () => {
+    // Add user message
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      sender: "user",
+      content: text,
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText("");
     setLoading(true);
+
     try {
-      const msgs = await chatService.getMessages();
-      setMessages(msgs);
+      // Get AI response
+      const aiResponse = await GeminiAIService.chatWithAI(
+        text,
+        conversationHistory
+      );
+
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        content: aiResponse,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // Update conversation history
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "user", content: text },
+        { role: "assistant", content: aiResponse },
+      ]);
+    } catch (error) {
+      console.error("Failed to get AI response:", error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        sender: "ai",
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSendMessage = async () => {
-    if (newMessage.trim() === "") return;
-    setMessages([
-      ...messages,
-      {
-        id: Date.now().toString(),
-        sender: "You",
-        content: newMessage,
-        timestamp: "now",
-      },
-    ]);
-    setNewMessage("");
   };
 
   const containerStyle: ViewStyle = {
@@ -64,11 +112,6 @@ export default function ChatScreen() {
       : THEME.light.background.main,
   };
 
-  const contentStyle: ViewStyle = {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.md,
-  };
-
   const titleStyle: TextStyle = {
     fontSize: 28,
     fontWeight: "700",
@@ -76,57 +119,62 @@ export default function ChatScreen() {
     marginBottom: THEME.spacing.sm,
   };
 
-  const renderMessage = ({ item }: { item: any }) => (
-    <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-start",
-          gap: THEME.spacing.md,
-        }}
-      >
-        <MaterialCommunityIcons
-          name="account-circle"
-          size={32}
-          color={THEME.colors.primary}
-        />
-        <View style={{ flex: 1 }}>
+  const renderMessage = ({ item }: { item: Message }) => (
+    <View
+      style={{
+        alignItems: item.sender === "user" ? "flex-end" : "flex-start",
+        marginHorizontal: THEME.spacing.lg,
+        marginVertical: THEME.spacing.sm,
+      }}
+    >
+      {item.sender === "ai" && (
+        <View style={{ flexDirection: "row", gap: THEME.spacing.sm, marginBottom: THEME.spacing.xs }}>
+          <MaterialCommunityIcons
+            name="robot-happy"
+            size={16}
+            color={THEME.colors.primary}
+          />
           <Text
             style={{
-              fontSize: 14,
+              fontSize: 10,
               fontWeight: "600",
-              color: isDark
-                ? THEME.dark.text.primary
-                : THEME.light.text.primary,
+              color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
             }}
           >
-            {item.sender}
-          </Text>
-          <Text
-            style={{
-              fontSize: 13,
-              color: isDark
-                ? THEME.dark.text.secondary
-                : THEME.light.text.secondary,
-              marginTop: THEME.spacing.xs,
-            }}
-          >
-            {item.content}
-          </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              color: isDark
-                ? THEME.dark.text.tertiary
-                : THEME.light.text.tertiary,
-              marginTop: THEME.spacing.xs,
-            }}
-          >
-            {item.timestamp}
+            AI Assistant
           </Text>
         </View>
-      </View>
-    </PremiumCard>
+      )}
+      <PremiumCard
+        style={[
+          {
+            maxWidth: "85%",
+            paddingVertical: THEME.spacing.md,
+            backgroundColor:
+              item.sender === "user"
+                ? THEME.colors.primary
+                : isDark
+                ? THEME.dark.background.tertiary
+                : THEME.light.background.tertiary,
+          },
+        ]}
+      >
+        <Text
+          style={{
+            fontSize: 14,
+            lineHeight: 20,
+            color:
+              item.sender === "user"
+                ? "#fff"
+                : isDark
+                ? THEME.dark.text.primary
+                : THEME.light.text.primary,
+          }}
+        >
+          {item.content}
+        </Text>
+      </PremiumCard>
+    </View>
   );
 
   return (
@@ -135,73 +183,152 @@ export default function ChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
+        <View style={{ paddingHorizontal: THEME.spacing.lg, paddingVertical: THEME.spacing.md }}>
+          <Text style={titleStyle}>AI Assistant</Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: isDark
+                ? THEME.dark.text.secondary
+                : THEME.light.text.secondary,
+            }}
+          >
+            Ask me anything about HR
+          </Text>
+        </View>
+
+        {messages.length === 1 && (
+          <View
+            style={{
+              paddingHorizontal: THEME.spacing.lg,
+              paddingVertical: THEME.spacing.md,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: isDark
+                  ? THEME.dark.text.secondary
+                  : THEME.light.text.secondary,
+                marginBottom: THEME.spacing.md,
+              }}
+            >
+              Try asking:
+            </Text>
+            <View style={{ gap: THEME.spacing.sm }}>
+              {QUICK_PROMPTS.map((prompt, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  onPress={() => handleSendMessage(prompt)}
+                  style={{
+                    paddingHorizontal: THEME.spacing.md,
+                    paddingVertical: THEME.spacing.sm,
+                    borderRadius: THEME.borderRadius.md,
+                    borderWidth: 1,
+                    borderColor: isDark
+                      ? THEME.dark.border
+                      : THEME.light.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: THEME.colors.primary,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {prompt}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         <FlatList
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={contentStyle}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={loadMessages} />
-          }
-          ListHeaderComponent={() => (
-            <View style={{ marginBottom: THEME.spacing.lg }}>
-              <Text style={titleStyle}>Chat</Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDark
-                    ? THEME.dark.text.secondary
-                    : THEME.light.text.secondary,
-                }}
-              >
-                Team conversation
-              </Text>
-            </View>
-          )}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: THEME.spacing.lg }}
+          showsVerticalScrollIndicator={false}
         />
-        <View
-          style={{
-            paddingHorizontal: THEME.spacing.lg,
-            paddingVertical: THEME.spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: isDark ? THEME.dark.border : THEME.light.border,
-          }}
+
+        {loading && (
+          <View
+            style={{
+              alignItems: "center",
+              paddingVertical: THEME.spacing.md,
+            }}
+          >
+            <ActivityIndicator
+              size="small"
+              color={THEME.colors.primary}
+            />
+          </View>
+        )}
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: THEME.spacing.lg,
+              paddingVertical: THEME.spacing.md,
+              gap: THEME.spacing.sm,
+            }}
+          >
             <TextInput
-              placeholder="Type a message..."
+              placeholder="Type your message..."
               placeholderTextColor={
-                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+                isDark
+                  ? THEME.dark.text.tertiary
+                  : THEME.light.text.tertiary
               }
-              value={newMessage}
-              onChangeText={setNewMessage}
+              value={inputText}
+              onChangeText={setInputText}
               style={{
                 flex: 1,
-                borderWidth: 1,
-                borderColor: isDark ? THEME.dark.border : THEME.light.border,
-                borderRadius: THEME.borderRadius.md,
                 paddingHorizontal: THEME.spacing.md,
-                paddingVertical: THEME.spacing.md,
+                paddingVertical: THEME.spacing.sm,
+                borderRadius: THEME.borderRadius.md,
+                backgroundColor: isDark
+                  ? THEME.dark.background.tertiary
+                  : THEME.light.background.tertiary,
                 color: isDark
                   ? THEME.dark.text.primary
                   : THEME.light.text.primary,
+                borderWidth: 1,
+                borderColor: isDark
+                  ? THEME.dark.border
+                  : THEME.light.border,
               }}
+              editable={!loading}
             />
             <TouchableOpacity
-              onPress={handleSendMessage}
+              onPress={() => handleSendMessage(inputText)}
+              disabled={loading || !inputText.trim()}
               style={{
-                justifyContent: "center",
-                alignItems: "center",
                 width: 44,
                 height: 44,
-                borderRadius: THEME.borderRadius.md,
+                borderRadius: 22,
                 backgroundColor: THEME.colors.primary,
+                justifyContent: "center",
+                alignItems: "center",
+                opacity: loading || !inputText.trim() ? 0.5 : 1,
               }}
             >
-              <MaterialCommunityIcons name="send" size={20} color="white" />
+              <MaterialCommunityIcons
+                name="send"
+                size={20}
+                color="#fff"
+              />
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

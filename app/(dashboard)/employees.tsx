@@ -19,7 +19,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   Text,
   TextStyle,
@@ -27,6 +26,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface EmployeeItem {
   id: string;
@@ -297,12 +297,16 @@ export default function EmployeesScreen() {
           <MaterialCommunityIcons
             name="email-outline"
             size={16}
-            color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+            color={
+              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+            }
           />
           <Text
             style={{
               fontSize: 12,
-              color: isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary,
+              color: isDark
+                ? THEME.dark.text.tertiary
+                : THEME.light.text.tertiary,
               flex: 1,
             }}
             numberOfLines={1}
@@ -330,9 +334,7 @@ export default function EmployeesScreen() {
   return (
     <SafeAreaView style={containerStyle}>
       <View style={headerStyle}>
-        <Text style={headerTitleStyle}>
-          Employees ({employees.length})
-        </Text>
+        <Text style={headerTitleStyle}>Employees ({employees.length})</Text>
         <SearchBar
           placeholder="Search employees..."
           value={searchText}
@@ -369,8 +371,15 @@ export default function EmployeesScreen() {
       </ScrollView>
 
       {error ? (
-        <View style={{ paddingHorizontal: THEME.spacing.lg, paddingBottom: THEME.spacing.md }}>
-          <Text style={{ color: THEME.colors.danger, fontSize: 14 }}>{error}</Text>
+        <View
+          style={{
+            paddingHorizontal: THEME.spacing.lg,
+            paddingBottom: THEME.spacing.md,
+          }}
+        >
+          <Text style={{ color: THEME.colors.danger, fontSize: 14 }}>
+            {error}
+          </Text>
         </View>
       ) : null}
 

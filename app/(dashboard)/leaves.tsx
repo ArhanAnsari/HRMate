@@ -10,13 +10,13 @@ import React, { useEffect, useState } from "react";
 import {
   FlatList,
   RefreshControl,
-  SafeAreaView,
   Text,
   TextStyle,
   View,
   ViewStyle,
   useColorScheme,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LeavesScreen() {
   const colorScheme = useColorScheme();

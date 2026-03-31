@@ -164,29 +164,37 @@ export const LeaveChart: React.FC<LeaveChartProps> = ({ data }) => {
     );
   }
 
-  const chartData = {
-    labels: ["Approved", "Pending", "Rejected"],
-    datasets: [
-      {
-        data: [data.approved || 0, data.pending || 0, data.rejected || 0],
-      },
-    ],
-  };
+  const legendFontColor = isDark
+    ? THEME.dark.text.secondary
+    : THEME.light.text.secondary;
 
-  const chartColors = [
-    THEME.colors.success,
-    THEME.colors.warning,
-    THEME.colors.danger,
+  const chartData = [
+    {
+      name: "Approved",
+      value: Number(data.approved ?? 0),
+      color: THEME.colors.success,
+      legendFontColor,
+      legendFontSize: 12,
+    },
+    {
+      name: "Pending",
+      value: Number(data.pending ?? 0),
+      color: THEME.colors.warning,
+      legendFontColor,
+      legendFontSize: 12,
+    },
+    {
+      name: "Rejected",
+      value: Number(data.rejected ?? 0),
+      color: THEME.colors.danger,
+      legendFontColor,
+      legendFontSize: 12,
+    },
   ];
 
   return (
     <PieChart
-      data={
-        {
-          labels: chartData.labels,
-          datasets: chartData.datasets,
-        } as any
-      }
+      data={chartData}
       width={350}
       height={220}
       paddingLeft="0"
@@ -204,7 +212,7 @@ export const LeaveChart: React.FC<LeaveChartProps> = ({ data }) => {
         labelColor: () =>
           isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
       }}
-      accessor="data"
+      accessor="value"
       backgroundColor="transparent"
     />
   );

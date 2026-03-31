@@ -12,7 +12,7 @@
  * - Retry mechanism for failed sends
  */
 
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import * as Notifications from "expo-notifications";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";
@@ -316,7 +316,7 @@ export const messagingService = {
       const result = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.DEVICE_TOKENS,
-        "unique()",
+        ID.unique(),
         {
           user_id: userId,
           device_token: deviceToken,

@@ -11,6 +11,7 @@ import { useAuthStore } from "@/src/state/auth.store";
 import { useBiometricStore } from "@/src/state/biometric.store";
 import { useNotificationStore } from "@/src/state/notifications.store";
 import { THEME } from "@/src/theme";
+import Constants from "expo-constants";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -322,7 +323,7 @@ export default function SettingsScreen() {
                   : THEME.light.text.secondary,
               }}
             >
-              Version 1.0.0 • Premium Edition
+              Version {Constants.expoConfig?.version ?? "1.0.2"} • Premium Edition
             </Text>
             <Text
               style={{

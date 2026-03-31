@@ -7,7 +7,7 @@
  * - Per-event notification settings
  */
 
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";
 
@@ -90,7 +90,7 @@ export const notificationPreferencesService = {
       const result = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.NOTIFICATION_PREFERENCES,
-        "unique()",
+        ID.unique(),
         {
           user_id: userId,
           push_enabled: true,

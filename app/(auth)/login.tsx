@@ -1,7 +1,7 @@
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -23,8 +23,8 @@ export default function LoginScreen() {
   const isDark = colorScheme === "dark";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
+  const { login, isLoading, error } = useAuthStore();
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -78,27 +78,25 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError("Please enter email and password");
+      setLocalError("Please enter email and password");
+      return;
+    }
+    if (password.length < 8) {
+      setLocalError("Password must be at least 8 characters");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    setLocalError("");
 
     try {
-      // Mock authentication - replace with actual API call
-      if (email && password.length >= 6) {
-        await SecureStore.setItemAsync("authToken", "mock-token-" + Date.now());
-        router.replace("/(dashboard)");
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
+      await login(email.trim().toLowerCase(), password);
+      // Navigation handled by _layout.tsx auth guard
+    } catch {
+      // Error already set in auth store
     }
   };
+
+  const displayError = localError || error;
 
   return (
     <SafeAreaView style={containerStyle}>
@@ -113,7 +111,9 @@ export default function LoginScreen() {
           <Text style={titleStyle}>Welcome Back</Text>
           <Text style={subtitleStyle}>Enter your credentials to continue</Text>
 
-          {error ? <Text style={errorStyle}>{error}</Text> : null}
+          {displayError ? (
+            <Text style={errorStyle}>{displayError}</Text>
+          ) : null}
 
           <TextInput
             placeholder="Email"
@@ -123,8 +123,9 @@ export default function LoginScreen() {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            autoCapitalize="none"
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <TextInput
@@ -136,19 +137,20 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             secureTextEntry
             style={inputStyle}
-            editable={!loading}
+            editable={!isLoading}
           />
 
           <PrimaryButton
-            label={loading ? "Logging in..." : "Login"}
+            label={isLoading ? "Logging in..." : "Login"}
             onPress={handleLogin}
-            disabled={loading}
-            loading={loading}
+            disabled={isLoading}
+            loading={isLoading}
             style={{ marginBottom: THEME.spacing.md }}
           />
 
           <TouchableOpacity
             style={{ alignItems: "center", marginBottom: THEME.spacing.lg }}
+            onPress={() => router.push("/(auth)/forgot-password")}
           >
             <Text style={linkStyle}>Forgot Password?</Text>
           </TouchableOpacity>
@@ -169,7 +171,7 @@ export default function LoginScreen() {
                 marginBottom: THEME.spacing.sm,
               }}
             >
-              Don't have an account?
+              Don&apos;t have an account?
             </Text>
             <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
               <Text style={linkStyle}>Sign Up</Text>

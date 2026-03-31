@@ -1,3 +1,4 @@
+import { Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { Employee, EmployeeCreateInput, EmployeeUpdateInput } from "../types";
 import { databases } from "./appwrite";
@@ -15,7 +16,7 @@ export const employeeService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        [`companyId="${companyId}"`],
+        [Query.equal("company_id", companyId), Query.limit(limit), Query.offset(offset)],
       );
       return response.documents as unknown as Employee[];
     } catch (error) {
@@ -55,10 +56,10 @@ export const employeeService = {
         "unique()",
         {
           ...data,
-          companyId,
+          company_id: companyId,
           status: "active",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       );
       return response as unknown as Employee;
@@ -82,7 +83,7 @@ export const employeeService = {
         employeeId,
         {
           ...data,
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       );
       return response as unknown as Employee;
@@ -116,7 +117,7 @@ export const employeeService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        [`companyId="${companyId}"`],
+        [Query.equal("company_id", companyId), Query.limit(100)],
       );
 
       const employees = response.documents as unknown as Employee[];
@@ -142,25 +143,21 @@ export const employeeService = {
     filters: { department?: string; status?: string },
   ): Promise<Employee[]> {
     try {
+      const queryFilters: string[] = [Query.equal("company_id", companyId)];
+      if (filters.department) {
+        queryFilters.push(Query.equal("department", filters.department));
+      }
+      if (filters.status) {
+        queryFilters.push(Query.equal("status", filters.status));
+      }
+
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        [`companyId="${companyId}"`],
+        queryFilters,
       );
 
-      let employees = response.documents as unknown as Employee[];
-
-      if (filters.department) {
-        employees = employees.filter(
-          (e) => e.department === filters.department,
-        );
-      }
-
-      if (filters.status) {
-        employees = employees.filter((e) => e.status === filters.status);
-      }
-
-      return employees;
+      return response.documents as unknown as Employee[];
     } catch (error) {
       console.error("Failed to filter employees:", error);
       throw error;
@@ -202,7 +199,7 @@ export const employeeService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        [`companyId="${companyId}"`],
+        [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
       const employees = response.documents as unknown as Employee[];

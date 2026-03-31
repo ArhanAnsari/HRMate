@@ -208,4 +208,113 @@ Provide 2-3 observations and any recommendations.
       throw error;
     }
   },
+
+  /**
+   * Generate AI-powered notification message
+   *
+   * Creates smart, personalized messages for notifications
+   * based on event type and data
+   */
+  async generateNotificationMessage(
+    eventType: string,
+    data: Record<string, any>,
+  ): Promise<{ title: string; message: string }> {
+    // Fallback to default messages if AI is not configured
+    if (!genAI) {
+      return aiService.getDefaultNotificationMessage(eventType, data);
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
+
+      let context = `Generate a professional but friendly notification message for this HR event:\n\n`;
+      context += `Event Type: ${eventType}\n`;
+      context += `Data: ${JSON.stringify(data)}\n\n`;
+      context += `Requirements:
+- Title: Max 50 characters, engaging and clear
+- Message: Max 200 characters, include relevant data points
+- Professional but warm tone
+- Format response as JSON: { "title": "...", "message": "..." }`;
+
+      const prompt = context;
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+
+      // Parse JSON response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          title: parsed.title || "Notification",
+          message: parsed.message || "You have a new notification",
+        };
+      }
+
+      // Fallback if parsing fails
+      return aiService.getDefaultNotificationMessage(eventType, data);
+    } catch (error) {
+      console.error("Failed to generate AI notification message:", error);
+      return aiService.getDefaultNotificationMessage(eventType, data);
+    }
+  },
+
+  /**
+   * Get default notification messages
+   * Used as fallback if AI is unavailable
+   */
+  getDefaultNotificationMessage(
+    eventType: string,
+    data: Record<string, any>,
+  ): { title: string; message: string } {
+    const messages: Record<string, { title: string; message: string }> = {
+      LEAVE_APPLIED: {
+        title: "Leave Request Submitted",
+        message: `Your ${data.leaveType || "leave"} request for ${data.startDate || "upcoming dates"} has been submitted.`,
+      },
+      LEAVE_APPROVED: {
+        title: "Leave Approved ✓",
+        message: `Your ${data.leaveType || "leave"} request has been approved for ${data.startDate || "the requested dates"}.`,
+      },
+      LEAVE_REJECTED: {
+        title: "Leave Request Declined",
+        message: `Your ${data.leaveType || "leave"} request could not be approved. Reason: ${data.reason || "See details for more info."}`,
+      },
+      SALARY_PROCESSED: {
+        title: "Salary Processed",
+        message: `Your salary for ${data.month || "this month"} has been processed. Amount: ₹${data.amount || "----"}`,
+      },
+      ATTENDANCE_MARKED: {
+        title: "Attendance Recorded",
+        message: `Your attendance for ${data.date || "today"} has been marked as ${data.status || "present"}.`,
+      },
+      EMPLOYEE_ADDED: {
+        title: "New Team Member",
+        message: `Welcome ${data.employeeName || "the new team member"}! They've been added to your department.`,
+      },
+      OTP_LOGIN: {
+        title: "Login Verification Code",
+        message: `Your OTP is: ${data.otp || "------"}. Valid for 10 minutes.`,
+      },
+      HR_ANNOUNCEMENT: {
+        title: "New Announcement",
+        message: `${data.title || "There's a new announcement from HR"}: ${data.announcement?.substring(0, 100) || "Check the app for details."}`,
+      },
+      PAYSLIP_GENERATED: {
+        title: "Payslip Ready",
+        message: `Your payslip for ${data.month || "this month"} is now available. Net: ₹${data.netAmount || "----"}`,
+      },
+      SHIFT_ASSIGNED: {
+        title: "Shift Assigned",
+        message: `You've been assigned to ${data.shiftName || "a shift"} on ${data.shiftDate || "upcoming dates"}.`,
+      },
+    };
+
+    return (
+      messages[eventType] || {
+        title: "New Notification",
+        message: "You have a new message from HRMate.",
+      }
+    );
+  },
 };

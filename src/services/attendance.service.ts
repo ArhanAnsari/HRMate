@@ -1,6 +1,8 @@
 import { attendanceQueries, getCurrentUserCompanyId } from "./appwriteClient";
 
 export interface AttendanceRecord {
+  email: any;
+  hoursWorked: any;
   id: string;
   name: string;
   status: "present" | "absent" | "late";
@@ -15,6 +17,12 @@ export interface AttendanceStats {
   onLeave: number;
   presentOnTime: number;
   lateArrivals: number;
+  // Aliases for backward compatibility
+  presentCount?: number;
+  absentCount?: number;
+  onLeaveCount?: number;
+  lateCount?: number;
+  onTimeCount?: number;
 }
 
 export interface TrendData {
@@ -36,7 +44,7 @@ export const attendanceService = {
   // Get attendance records for today
   async getTodayRecords(companyId?: string): Promise<AttendanceRecord[]> {
     const cId = companyId || (await getCurrentUserCompanyId());
-    return attendanceQueries.getTodayRecords(cId) as Promise<
+    return attendanceQueries.getTodayRecords(cId) as unknown as Promise<
       AttendanceRecord[]
     >;
   },

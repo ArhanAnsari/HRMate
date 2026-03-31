@@ -1,58 +1,78 @@
 /**
- * 📋 ATTENDANCE SCREEN - Daily attendance tracking & analytics
+ * ATTENDANCE SCREEN - Daily attendance tracking & analytics
  */
 
 import { FAB } from "@/src/components/ui/FAB";
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
-import { THEME } from "@/src/theme";
-import React, { useState } from "react";
 import {
-    FlatList,
-    SafeAreaView,
-    Text,
-    TextStyle,
-    useColorScheme,
-    View,
-    ViewStyle,
+  AttendanceRecord,
+  attendanceService,
+  AttendanceStats,
+} from "@/src/services/attendance.service";
+import { useAuthStore } from "@/src/state/auth.store";
+import { THEME } from "@/src/theme";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  Text,
+  TextStyle,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from "react-native";
-
-interface AttendanceRecord {
-  id: string;
-  employeeName: string;
-  date: string;
-  checkIn: string;
-  checkOut: string;
-  hours: number;
-  status: "present" | "late" | "absent" | "half-day";
-}
 
 export default function AttendanceScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
   const [searchText, setSearchText] = useState("");
+  const [attendanceRecords, setAttendanceRecords] = useState<
+    AttendanceRecord[]
+  >([]);
+  const [stats, setStats] = useState<AttendanceStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const attendanceRecords: AttendanceRecord[] = [
-    {
-      id: "1",
-      employeeName: "John Doe",
-      date: "Mar 30, 2026",
-      checkIn: "09:15 AM",
-      checkOut: "05:45 PM",
-      hours: 8.5,
-      status: "present",
-    },
-    {
-      id: "2",
-      employeeName: "Sarah Smith",
-      date: "Mar 30, 2026",
-      checkIn: "10:30 AM",
-      checkOut: "06:00 PM",
-      hours: 7.5,
-      status: "late",
-    },
-  ];
+  const loadAttendanceData = useCallback(async () => {
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const [todayStats, todayRecords] = await Promise.all([
+        attendanceService.getTodayStats(user.companyId),
+        attendanceService.getTodayRecords(user.companyId),
+      ]);
+      setStats(todayStats);
+      setAttendanceRecords(todayRecords || []);
+    } catch (error) {
+      console.error("Error loading attendance:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.companyId]);
+
+  useEffect(() => {
+    loadAttendanceData();
+  }, [loadAttendanceData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadAttendanceData();
+    setRefreshing(false);
+  };
+
+  const filteredRecords = attendanceRecords.filter(
+    (r) =>
+      r.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      r.email?.toLowerCase().includes(searchText.toLowerCase()),
+  );
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -113,12 +133,55 @@ export default function AttendanceScreen() {
     }
   };
 
+  // Calculate percentages based on actual data
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return { direction: "neutral" as const, percentage: 0 };
+    const change = ((current - previous) / previous) * 100;
+    const direction: "up" | "down" | "neutral" =
+      change > 0 ? "up" : change < 0 ? "down" : "neutral";
+    return {
+      direction,
+      percentage: Math.abs(Math.round(change)),
+    };
+  };
+
+  const totalEmployees =
+    (stats?.present || 0) + (stats?.absent || 0) + (stats?.onLeave || 0);
+  const presentPercentage =
+    totalEmployees > 0
+      ? Math.round(((stats?.present || 0) / totalEmployees) * 100)
+      : 0;
+  const onTimePercentage =
+    totalEmployees > 0
+      ? Math.round(((stats?.presentOnTime || 0) / totalEmployees) * 100)
+      : 0;
+  const latePercentage =
+    totalEmployees > 0
+      ? Math.round(((stats?.lateArrivals || 0) / totalEmployees) * 100)
+      : 0;
+  const absentPercentage =
+    totalEmployees > 0
+      ? Math.round(((stats?.absent || 0) / totalEmployees) * 100)
+      : 0;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={containerStyle}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={THEME.colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={containerStyle}>
       <View style={headerStyle}>
         <Text style={headerTitleStyle}>Attendance</Text>
         <SearchBar
-          placeholder="Search..."
+          placeholder="Search employees..."
           value={searchText}
           onChangeText={setSearchText}
           onFilterPress={() => {}}
@@ -126,59 +189,94 @@ export default function AttendanceScreen() {
       </View>
 
       <View style={metricsGridStyle}>
-        {[
-          { label: "Present", value: "24", trend: "up" },
-          { label: "On Time", value: "18", trend: "down" },
-          { label: "Late", value: "4", trend: "up" },
-          { label: "Absent", value: "2", trend: "neutral" },
-        ].map((m, i) => (
-          <View key={i} style={metricItemStyle}>
-            <MetricCard
-              label={m.label}
-              value={m.value}
-              trend={{ direction: m.trend as any, percentage: 5 }}
-            />
-          </View>
-        ))}
+        <View style={metricItemStyle}>
+          <MetricCard
+            label="Present"
+            value={stats?.present?.toString() || "0"}
+            trend={{
+              direction: presentPercentage > 50 ? "up" : "down",
+              percentage: presentPercentage,
+            }}
+          />
+        </View>
+        <View style={metricItemStyle}>
+          <MetricCard
+            label="On Time"
+            value={stats?.presentOnTime?.toString() || "0"}
+            trend={{
+              direction: onTimePercentage > 50 ? "up" : "down",
+              percentage: onTimePercentage,
+            }}
+          />
+        </View>
+        <View style={metricItemStyle}>
+          <MetricCard
+            label="Late"
+            value={stats?.lateArrivals?.toString() || "0"}
+            trend={{
+              direction: latePercentage < 20 ? "down" : "up",
+              percentage: latePercentage,
+            }}
+          />
+        </View>
+        <View style={metricItemStyle}>
+          <MetricCard
+            label="Absent"
+            value={stats?.absent?.toString() || "0"}
+            trend={{
+              direction: absentPercentage < 10 ? "down" : "up",
+              percentage: absentPercentage,
+            }}
+          />
+        </View>
       </View>
 
       <FlatList
-        data={attendanceRecords}
+        data={filteredRecords}
         renderItem={({ item }) => (
           <PremiumCard interactive style={recordCardStyle}>
             <View style={recordRowStyle}>
-              <Text style={recordValueStyle}>{item.employeeName}</Text>
+              <Text style={recordValueStyle}>{item.name}</Text>
               <View
                 style={{
                   paddingVertical: 4,
                   paddingHorizontal: 8,
                   borderRadius: 8,
-                  backgroundColor: getStatusColor(item.status),
+                  backgroundColor: getStatusColor(item.status || "absent"),
                 }}
               >
                 <Text
                   style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}
                 >
-                  {item.status.toUpperCase()}
+                  {(item.status || "ABSENT").toUpperCase()}
                 </Text>
               </View>
             </View>
             <View style={recordRowStyle}>
               <Text style={recordLabelStyle}>Check In</Text>
-              <Text style={recordValueStyle}>{item.checkIn}</Text>
+              <Text style={recordValueStyle}>{item.checkIn || "-"}</Text>
             </View>
             <View style={recordRowStyle}>
               <Text style={recordLabelStyle}>Check Out</Text>
-              <Text style={recordValueStyle}>{item.checkOut}</Text>
+              <Text style={recordValueStyle}>{item.checkOut || "-"}</Text>
             </View>
-            <View style={recordRowStyle}>
-              <Text style={recordLabelStyle}>Hours</Text>
-              <Text style={recordValueStyle}>{item.hours}h</Text>
-            </View>
+            {item.hoursWorked && (
+              <View style={recordRowStyle}>
+                <Text style={recordLabelStyle}>Hours</Text>
+                <Text style={recordValueStyle}>{item.hoursWorked}h</Text>
+              </View>
+            )}
           </PremiumCard>
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={listContainerStyle}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={THEME.colors.primary}
+          />
+        }
       />
 
       <FAB

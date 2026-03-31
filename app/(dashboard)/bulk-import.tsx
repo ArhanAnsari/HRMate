@@ -1,5 +1,5 @@
 /**
- * 📥 BULK EMPLOYEE IMPORT SCREEN
+ * BULK EMPLOYEE IMPORT SCREEN
  * Import employees from CSV with validation
  */
 
@@ -21,10 +21,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import { employeeService } from "@/src/services/employees.service";
 import { useAuthStore } from "@/src/state/auth.store";
+import { useEmployeeStore } from "@/src/state/employee.store";
 import { THEME } from "@/src/theme";
-import { usePermission } from "@/src/utils/rbac";
-import { ValidationService } from "@/src/utils/validation.service";
 
 interface EmployeeImportData {
   firstName: string;
@@ -49,8 +49,7 @@ export default function BulkImportScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user } = useAuthStore();
-
-  const canBulkImport = usePermission("canBulkImport" as any);
+  const { bulkImportEmployees } = useEmployeeStore();
 
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -142,43 +141,79 @@ export default function BulkImportScreen() {
       return;
     }
 
+    if (!user?.companyId) {
+      Alert.alert("Error", "Company ID not found");
+      return;
+    }
+
     setImporting(true);
     try {
       const importResults: ImportResult[] = [];
 
       for (let i = 0; i < fileContent.length; i++) {
         const employee = fileContent[i];
-        const rowNumber = i + 2; // +2 because of 0-indexing and header row
+        const rowNumber = i + 2;
 
         try {
-          // Validate employee data
-          const validation = ValidationService.validateEmployeeForm({
-            name: `${employee.firstName} ${employee.lastName}`,
-            email: employee.email,
-            phone: employee.phone,
-            department: employee.department,
-            role: employee.position,
-            salary: employee.baseSalary,
-            joinDate: employee.joiningDate,
-          });
-
-          if (!validation.valid) {
+          // Basic validation
+          if (
+            !employee.firstName ||
+            !employee.lastName ||
+            !employee.email ||
+            !employee.phone ||
+            !employee.position ||
+            !employee.department
+          ) {
             importResults.push({
               row: rowNumber,
               status: "error",
-              message: Object.values(validation.errors).join(", "),
+              message:
+                "Missing required fields (firstName, lastName, email, phone, position, department)",
             });
             continue;
           }
 
-          // TODO: Call your API to create employee
-          // For now, just simulate success
-          importResults.push({
-            row: rowNumber,
-            status: "success",
-            message: "Employee imported successfully",
-            data: employee,
-          });
+          // Email format validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(employee.email)) {
+            importResults.push({
+              row: rowNumber,
+              status: "error",
+              message: "Invalid email format",
+            });
+            continue;
+          }
+
+          // Create employee in Appwrite
+          try {
+            const createdEmployee = await employeeService.createEmployee(
+              user.companyId,
+              {
+                firstName: employee.firstName,
+                lastName: employee.lastName,
+                email: employee.email,
+                phone: employee.phone,
+                position: employee.position,
+                department: employee.department,
+                joiningDate: employee.joiningDate,
+              },
+            );
+
+            importResults.push({
+              row: rowNumber,
+              status: "success",
+              message: `Employee ${employee.firstName} ${employee.lastName} imported successfully`,
+              data: employee,
+            });
+          } catch (apiError) {
+            importResults.push({
+              row: rowNumber,
+              status: "error",
+              message: `Failed to create: ${
+                apiError instanceof Error ? apiError.message : "Unknown error"
+              }`,
+            });
+          }
         } catch (error) {
           importResults.push({
             row: rowNumber,
@@ -199,7 +234,7 @@ export default function BulkImportScreen() {
 
       Alert.alert(
         "Import Complete",
-        `✅ ${successCount} imported\n❌ ${errorCount} failed`,
+        `Success: ${successCount}\nFailed: ${errorCount}`,
       );
     } finally {
       setImporting(false);
@@ -351,25 +386,6 @@ export default function BulkImportScreen() {
       lineHeight: 18,
     },
   });
-
-  if (!canBulkImport) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bulk Import</Text>
-        </View>
-        <View style={styles.noPermission}>
-          <MaterialCommunityIcons
-            name="lock-outline"
-            style={styles.noPermissionIcon}
-          />
-          <Text style={styles.noPermissionText}>
-            You don't have permission to import employees
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>

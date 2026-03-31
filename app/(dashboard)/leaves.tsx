@@ -4,7 +4,8 @@
 
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
-import { leaveService } from "@/src/services/domain.service";
+import { leavesService } from "@/src/services/leaves.service";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import React, { useEffect, useState } from "react";
 import {
@@ -21,23 +22,44 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function LeavesScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
   const [leaveStats, setLeaveStats] = useState<any>(null);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadLeaveData();
-  }, []);
+    if (user?.companyId && user?.$id) {
+      loadLeaveData();
+    }
+  }, [user?.companyId, user?.$id]);
 
   const loadLeaveData = async () => {
+    if (!user?.companyId || !user?.$id) return;
+
     setLoading(true);
     try {
       const [stats, requests] = await Promise.all([
-        leaveService.getLeaveStats(),
-        leaveService.getLeaveRequests(),
+        leavesService.getLeaveBalance(user.companyId, user.$id),
+        leavesService.getEmployeeLeaves(user.companyId, user.$id),
       ]);
-      setLeaveStats(stats);
+
+      // Map to expected format
+      setLeaveStats({
+        totalDays: stats.total,
+        usedDays: stats.used,
+        remainingDays: stats.remaining,
+      });
+
       setLeaveRequests(requests);
+    } catch (error) {
+      console.error("Failed to load leave data:", error);
+      // Set default empty state on error
+      setLeaveStats({
+        totalDays: 20,
+        usedDays: 0,
+        remainingDays: 20,
+      });
+      setLeaveRequests([]);
     } finally {
       setLoading(false);
     }
@@ -81,7 +103,8 @@ export default function LeavesScreen() {
                 : THEME.light.text.primary,
             }}
           >
-            {item.type}
+            {item.leaveType?.charAt(0).toUpperCase() +
+              item.leaveType?.slice(1) || "Leave"}
           </Text>
           <View
             style={{
@@ -108,7 +131,8 @@ export default function LeavesScreen() {
                       : THEME.colors.danger,
               }}
             >
-              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+              {item.status?.charAt(0).toUpperCase() + item.status?.slice(1) ||
+                "Pending"}
             </Text>
           </View>
         </View>
@@ -185,7 +209,7 @@ export default function LeavesScreen() {
                 : THEME.light.text.primary,
             }}
           >
-            {item.days}
+            {item.numberOfDays}
           </Text>
         </View>
       </View>
@@ -197,7 +221,7 @@ export default function LeavesScreen() {
       <FlatList
         data={leaveRequests}
         renderItem={renderLeaveRequest}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.$id || Math.random().toString()}
         contentContainerStyle={contentStyle}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={loadLeaveData} />
@@ -234,11 +258,22 @@ export default function LeavesScreen() {
                   />
                 </View>
                 <View style={{ width: "48%" }}>
-                  <MetricCard
-                    label="Remaining"
-                    value={leaveStats.remainingDays.toString()}
-                    trend={{ direction: "up", percentage: 5 }}
-                  />
+                  {leaveStats.totalDays > 0 && (
+                    <MetricCard
+                      label="Remaining"
+                      value={leaveStats.remainingDays.toString()}
+                      trend={{
+                        direction:
+                          leaveStats.remainingDays >= leaveStats.totalDays * 0.5
+                            ? "up"
+                            : "down",
+                        percentage: Math.round(
+                          (leaveStats.remainingDays / leaveStats.totalDays) *
+                            100,
+                        ),
+                      }}
+                    />
+                  )}
                 </View>
               </View>
             )}

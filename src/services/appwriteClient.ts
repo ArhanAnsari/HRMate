@@ -89,7 +89,15 @@ export const attendanceQueries = {
         }
       });
 
-      return stats;
+      return {
+        ...stats,
+        // Aliases for backward compatibility
+        presentCount: stats.present,
+        absentCount: stats.absent,
+        onLeaveCount: stats.onLeave,
+        lateCount: stats.lateArrivals,
+        onTimeCount: stats.presentOnTime,
+      };
     } catch (error) {
       throw new Error(
         `Failed to fetch attendance stats: ${handleAppwriteError(error)}`,
@@ -119,10 +127,12 @@ export const attendanceQueries = {
         id: doc.$id,
         employeeId: doc.employee_id,
         name: doc.employee_name || "N/A",
+        email: doc.employee_email || "",
         status: doc.status,
         checkIn: doc.check_in_time || "-",
         checkOut: doc.check_out_time || "-",
         duration: doc.duration_hours ? `${doc.duration_hours}h` : "-",
+        hoursWorked: doc.duration_hours || 0,
       }));
     } catch (error) {
       throw new Error(

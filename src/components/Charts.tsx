@@ -5,7 +5,7 @@
 
 import { THEME } from "@/src/theme";
 import React from "react";
-import { useColorScheme } from "react-native";
+import { Text, useColorScheme, View } from "react-native";
 import { BarChart, LineChart, PieChart } from "react-native-chart-kit";
 
 interface ChartData {
@@ -120,10 +120,10 @@ export const PayrollChart: React.FC<PayrollChartProps> = ({ data }) => {
 };
 
 interface LeaveChartProps {
-  data: {
-    approved: number;
-    pending: number;
-    rejected: number;
+  data?: {
+    approved?: number;
+    pending?: number;
+    rejected?: number;
   };
 }
 
@@ -131,11 +131,44 @@ export const LeaveChart: React.FC<LeaveChartProps> = ({ data }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  // Handle undefined or empty data
+  if (
+    !data ||
+    (data.approved === undefined &&
+      data.pending === undefined &&
+      data.rejected === undefined)
+  ) {
+    return (
+      <View
+        style={{
+          width: 350,
+          height: 220,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: isDark
+            ? THEME.dark.background.alt
+            : THEME.light.background.alt,
+          borderRadius: THEME.borderRadius.lg,
+        }}
+      >
+        <Text
+          style={{
+            color: isDark
+              ? THEME.dark.text.secondary
+              : THEME.light.text.secondary,
+          }}
+        >
+          No leave data available
+        </Text>
+      </View>
+    );
+  }
+
   const chartData = {
     labels: ["Approved", "Pending", "Rejected"],
     datasets: [
       {
-        data: [data.approved, data.pending, data.rejected],
+        data: [data.approved || 0, data.pending || 0, data.rejected || 0],
       },
     ],
   };

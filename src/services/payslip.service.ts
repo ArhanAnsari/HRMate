@@ -335,7 +335,7 @@ export class PayslipService {
             <!-- Footer -->
             <div class="footer">
               <p>Generated on ${new Date().toLocaleString()} | HRMate - Employee Management System</p>
-              <p style="margin-top: 5px;">© 2024 HRMate. All rights reserved.</p>
+              <p style="margin-top: 5px;">© 2026 HRMate. All rights reserved.</p>
             </div>
           </div>
         </body>

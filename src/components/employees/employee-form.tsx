@@ -1,17 +1,18 @@
+import { SecurityService } from "@/src/services/security/SecurityService";
+import { THEME } from "@/src/theme";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
-import { Colors, Spacing } from "../../constants";
 import { Employee, EmployeeCreateInput } from "../../types";
 
 interface EmployeeFormProps {
@@ -19,6 +20,7 @@ interface EmployeeFormProps {
   onSubmit: (data: EmployeeCreateInput) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
+  companyId: string;
 }
 
 const DEPARTMENTS = [
@@ -37,10 +39,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
+  companyId,
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
 
   const [form, setForm] = useState<EmployeeCreateInput>({
     firstName: initialEmployee?.firstName || "",
@@ -62,7 +64,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     if (!form.firstName.trim()) newErrors.firstName = "First name is required";
     if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
     if (!form.email.trim()) newErrors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    else if (!SecurityService.validateEmail(form.email))
       newErrors.email = "Invalid email format";
     if (!form.phone.trim()) newErrors.phone = "Phone is required";
     if (!form.position.trim()) newErrors.position = "Position is required";
@@ -76,7 +78,14 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     if (!validateForm()) return;
 
     try {
-      await onSubmit(form);
+      await onSubmit({
+        ...form,
+        firstName: SecurityService.sanitizeInput(form.firstName),
+        lastName: SecurityService.sanitizeInput(form.lastName),
+        email: SecurityService.sanitizeInput(form.email),
+        phone: SecurityService.sanitizeInput(form.phone),
+        position: SecurityService.sanitizeInput(form.position),
+      });
     } catch (error) {
       Alert.alert(
         "Error",
@@ -93,12 +102,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     keyboardType = "default",
     error,
   }: any) => (
-    <View style={{ marginBottom: Spacing.md }}>
+    <View style={{ marginBottom: THEME.spacing.md }}>
       <Text
         style={{
           fontSize: 13,
           fontWeight: "600",
-          color: colors.text,
+          color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
           marginBottom: 6,
         }}
       >
@@ -106,17 +115,25 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       </Text>
       <TextInput
         style={{
-          backgroundColor: isDark ? "#1f1f1f" : "#f3f4f6",
+          backgroundColor: isDark
+            ? THEME.dark.background.tertiary
+            : THEME.light.background.tertiary,
           borderWidth: 1,
-          borderColor: error ? "#ef4444" : isDark ? "#333" : "#e5e7eb",
-          borderRadius: 8,
-          paddingHorizontal: Spacing.md,
-          paddingVertical: Spacing.sm,
-          color: colors.text,
+          borderColor: error
+            ? "#ef4444"
+            : isDark
+              ? THEME.dark.border
+              : THEME.light.border,
+          borderRadius: THEME.borderRadius.md,
+          paddingHorizontal: THEME.spacing.md,
+          paddingVertical: THEME.spacing.sm,
+          color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
           fontSize: 14,
         }}
         placeholder={placeholder}
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={
+          isDark ? THEME.dark.text.secondary : THEME.light.text.secondary
+        }
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
@@ -131,12 +148,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   );
 
   const FormSelect = ({ label, value, onChangeText, options, error }: any) => (
-    <View style={{ marginBottom: Spacing.md }}>
+    <View style={{ marginBottom: THEME.spacing.md }}>
       <Text
         style={{
           fontSize: 13,
           fontWeight: "600",
-          color: colors.text,
+          color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
           marginBottom: 6,
         }}
       >
@@ -155,20 +172,33 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             disabled={isLoading}
             onPress={() => onChangeText(option)}
             style={{
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.sm,
-              borderRadius: 8,
-              marginRight: Spacing.sm,
+              paddingHorizontal: THEME.spacing.md,
+              paddingVertical: THEME.spacing.sm,
+              borderRadius: THEME.borderRadius.md,
+              marginRight: THEME.spacing.sm,
               backgroundColor:
-                value === option ? "#3b82f6" : isDark ? "#1f1f1f" : "#f3f4f6",
+                value === option
+                  ? THEME.colors.primary
+                  : isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
               borderWidth: 1,
               borderColor:
-                value === option ? "#3b82f6" : isDark ? "#333" : "#e5e7eb",
+                value === option
+                  ? THEME.colors.primary
+                  : isDark
+                    ? THEME.dark.border
+                    : THEME.light.border,
             }}
           >
             <Text
               style={{
-                color: value === option ? "#fff" : colors.text,
+                color:
+                  value === option
+                    ? "#fff"
+                    : isDark
+                      ? THEME.dark.text.primary
+                      : THEME.light.text.primary,
                 fontWeight: value === option ? "600" : "400",
                 fontSize: 13,
               }}
@@ -272,8 +302,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         <View
           style={{
             flexDirection: "row",
-            gap: Spacing.md,
-            marginTop: Spacing.lg,
+            gap: THEME.spacing.md,
+            marginTop: THEME.spacing.lg,
           }}
         >
           <TouchableOpacity
@@ -281,17 +311,30 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             onPress={onCancel}
             style={{
               flex: 1,
-              backgroundColor: isDark ? "#2a2a2a" : "#e5e7eb",
-              paddingVertical: Spacing.md,
-              borderRadius: 8,
+              backgroundColor: isDark
+                ? THEME.dark.background.tertiary
+                : THEME.light.background.tertiary,
+              paddingVertical: THEME.spacing.md,
+              borderRadius: THEME.borderRadius.md,
               alignItems: "center",
             }}
           >
             {isLoading ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator
+                size="small"
+                color={
+                  isDark ? THEME.dark.text.primary : THEME.light.text.primary
+                }
+              />
             ) : (
               <Text
-                style={{ color: colors.text, fontWeight: "600", fontSize: 14 }}
+                style={{
+                  color: isDark
+                    ? THEME.dark.text.primary
+                    : THEME.light.text.primary,
+                  fontWeight: "600",
+                  fontSize: 14,
+                }}
               >
                 Cancel
               </Text>
@@ -303,9 +346,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             onPress={handleSubmit}
             style={{
               flex: 1,
-              backgroundColor: "#10b981",
-              paddingVertical: Spacing.md,
-              borderRadius: 8,
+              backgroundColor: THEME.colors.primary,
+              paddingVertical: THEME.spacing.md,
+              borderRadius: THEME.borderRadius.md,
               alignItems: "center",
             }}
           >
@@ -319,7 +362,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: Spacing.lg }} />
+        <View style={{ height: THEME.spacing.lg }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

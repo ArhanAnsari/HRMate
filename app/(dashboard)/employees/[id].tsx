@@ -1,24 +1,24 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, Text, View, TouchableOpacity } from "react-native";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { EmployeeForm } from "../../../src/components/employees/employee-form";
-import { Button } from "../../../src/components/ui/button";
-import { Container } from "../../../src/components/ui/container";
-import { Colors, Spacing } from "../../../src/constants";
+import { THEME } from "../../../src/theme";
 import { useEmployeeStore } from "../../../src/state/employee.store";
+import { useAuthStore } from "../../../src/state/auth.store";
 import { useUIStore } from "../../../src/state/ui.store";
 import { EmployeeUpdateInput } from "../../../src/types";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function EditEmployeeScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
   const { selectedEmployee, fetchEmployee, updateEmployee, isLoading } =
     useEmployeeStore();
+  const { user } = useAuthStore();
   const { showToast } = useUIStore();
 
   useEffect(() => {
@@ -47,39 +47,36 @@ export default function EditEmployeeScreen() {
 
   if (isLoading && !selectedEmployee) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? THEME.dark.background.main : THEME.light.background.main }}>
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" color="#3b82f6" />
+          <ActivityIndicator size="large" color={THEME.colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Container padding={Spacing.lg}>
-        <View style={{ marginBottom: Spacing.lg }}>
-          <Button
-            title="← Back"
-            onPress={() => router.back()}
-            variant="ghost"
-            size="sm"
-          />
-        </View>
-
-        <View style={{ marginBottom: Spacing.lg }}>
-          <Text
-            style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}
-          >
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? THEME.dark.background.main : THEME.light.background.main }}>
+      <View style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={{ paddingHorizontal: THEME.spacing.lg, paddingBottom: THEME.spacing.md, paddingTop: THEME.spacing.md }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: THEME.spacing.md }}>
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={isDark ? THEME.dark.text.primary : THEME.light.text.primary}
+            />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: isDark ? THEME.dark.text.primary : THEME.light.text.primary }}>
             ✏️ Edit Employee
           </Text>
           {selectedEmployee && (
             <Text
               style={{
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
                 marginTop: 4,
               }}
             >
@@ -88,17 +85,19 @@ export default function EditEmployeeScreen() {
           )}
         </View>
 
+        {/* Form */}
         {selectedEmployee && (
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingHorizontal: THEME.spacing.lg }}>
             <EmployeeForm
               initialEmployee={selectedEmployee}
               onSubmit={handleUpdate}
               onCancel={() => router.back()}
               isLoading={isLoading}
+              companyId={user?.companyId || ""}
             />
           </View>
         )}
-      </Container>
+      </View>
     </SafeAreaView>
   );
 }

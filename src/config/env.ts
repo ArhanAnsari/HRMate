@@ -37,6 +37,15 @@ export const DB_IDS = {
   NOTIFICATIONS:
     process.env.EXPO_PUBLIC_NOTIFICATIONS_COLLECTION ||
     "notifications_collection",
+  DEVICE_TOKENS:
+    process.env.EXPO_PUBLIC_DEVICE_TOKENS_COLLECTION ||
+    "device_tokens_collection",
+  NOTIFICATION_PREFERENCES:
+    process.env.EXPO_PUBLIC_NOTIFICATION_PREFERENCES_COLLECTION ||
+    "notification_preferences_collection",
+  NOTIFICATION_LOGS:
+    process.env.EXPO_PUBLIC_NOTIFICATION_LOGS_COLLECTION ||
+    "notification_logs_collection",
   AUDIT_LOGS:
     process.env.EXPO_PUBLIC_AUDIT_LOGS_COLLECTION || "audit_logs_collection",
   COMPANIES:

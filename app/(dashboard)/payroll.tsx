@@ -1,6 +1,7 @@
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { payrollService } from "@/src/services/domain.service";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import React, { useEffect, useState } from "react";
 import {
@@ -17,23 +18,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function PayrollScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
   const [payroll, setPayroll] = useState<any>(null);
   const [payslips, setPayslips] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPayrollData();
-  }, []);
+    if (user?.companyId) {
+      loadPayrollData();
+    }
+  }, [user?.companyId]);
 
   const loadPayrollData = async () => {
+    if (!user?.companyId) return;
+
     setLoading(true);
     try {
       const [data, slips] = await Promise.all([
-        payrollService.getPayrollStats(),
-        payrollService.getPayslips(),
+        payrollService.getPayrollStats(user.companyId),
+        payrollService.getPayslips(user.companyId),
       ]);
       setPayroll(data);
       setPayslips(slips);
+    } catch (error) {
+      console.error("Failed to load payroll data:", error);
     } finally {
       setLoading(false);
     }

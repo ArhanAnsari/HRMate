@@ -214,7 +214,7 @@ export default function SettingsScreen() {
                 marginTop: THEME.spacing.sm,
               }}
             >
-              © 2024 HRMate. All rights reserved.
+              © 2026 HRMate. All rights reserved.
             </Text>
           </View>
         </PremiumCard>

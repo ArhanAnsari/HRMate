@@ -170,12 +170,22 @@ export default function SettingsScreen() {
           )}
         <PrimaryButton
           label="Change Password"
-          onPress={() => {}}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Change Password will be available in the next update.",
+            );
+          }}
           style={{ marginBottom: THEME.spacing.md }}
         />
         <PrimaryButton
           label="Edit Profile"
-          onPress={() => {}}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Edit Profile will be available in the next update.",
+            );
+          }}
           variant="secondary"
           style={{ marginBottom: THEME.spacing.md }}
         />

@@ -8,6 +8,7 @@ import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
+  Alert,
   ScrollView,
   Text,
   TextStyle,
@@ -260,12 +261,22 @@ export default function ProfileScreen() {
 
         <PrimaryButton
           label="Edit Profile"
-          onPress={() => {}}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Edit Profile will be available in the next update.",
+            );
+          }}
           style={{ marginBottom: THEME.spacing.md }}
         />
         <PrimaryButton
           label="Change Password"
-          onPress={() => {}}
+          onPress={() => {
+            Alert.alert(
+              "Coming Soon",
+              "Change Password will be available in the next update.",
+            );
+          }}
           variant="secondary"
         />
       </ScrollView>

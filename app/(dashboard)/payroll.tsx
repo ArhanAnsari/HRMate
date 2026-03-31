@@ -1,10 +1,13 @@
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
+import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { payrollService } from "@/src/services/domain.service";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   RefreshControl,
   Text,
@@ -16,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PayrollScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user } = useAuthStore();
@@ -164,14 +168,59 @@ export default function PayrollScreen() {
               Salary processing and payslips
             </Text>
 
+            <PrimaryButton
+              label="Run Payroll Now"
+              onPress={() => {
+                Alert.alert(
+                  "Run Payroll",
+                  "This will process real salaries, generate payslips in the cloud, and issue payouts for all active employees. Continue?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Start Processing",
+                      onPress: async () => {
+                        if (!user?.companyId) return;
+                        setLoading(true);
+                        try {
+                          const processed = await payrollService.processPayroll(
+                            user.companyId,
+                          );
+                          Alert.alert(
+                            "Success",
+                            `Payroll processed. Generated ${processed} payslip(s) in Appwrite for the current month!`,
+                          );
+                          loadPayrollData(); // refresh data
+                        } catch (err: any) {
+                          Alert.alert(
+                            "Error",
+                            err.message || "Failed to process payroll",
+                          );
+                          setLoading(false);
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
+              style={{
+                marginBottom: THEME.spacing.md,
+                backgroundColor: THEME.colors.primary,
+              }}
+            />
+
+            <PrimaryButton
+              label="View Downloadable Payslips"
+              onPress={() => router.push("/(dashboard)/payslips")}
+              variant="secondary"
+              style={{ marginBottom: THEME.spacing.lg }}
+            />
+
             {payroll && (
               <View
                 style={{
                   flexDirection: "row",
-                  flexWrap: "wrap",
                   justifyContent: "space-between",
-                  marginBottom: THEME.spacing.lg,
-                  gap: THEME.spacing.md,
+                  marginBottom: THEME.spacing.xl,
                 }}
               >
                 <View style={{ width: "48%" }}>

@@ -2,6 +2,7 @@
  * 🏖️ LEAVES SCREEN - Premium Design
  */
 
+import { FAB } from "@/src/components/ui/FAB";
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { leavesService } from "@/src/services/leaves.service";
@@ -9,6 +10,7 @@ import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   RefreshControl,
   Text,
@@ -162,7 +164,7 @@ export default function LeavesScreen() {
             {item.startDate}
           </Text>
         </View>
-        {item.endDate && (
+        {!!item.endDate && (
           <View>
             <Text
               style={{
@@ -292,6 +294,17 @@ export default function LeavesScreen() {
             </Text>
           </View>
         )}
+      />
+
+      <FAB
+        icon="plus"
+        onPress={() => {
+          Alert.alert(
+            "Apply for Leave",
+            "Leave application form will open here.",
+          );
+        }}
+        position="bottom-right"
       />
     </SafeAreaView>
   );

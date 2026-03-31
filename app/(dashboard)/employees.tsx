@@ -58,7 +58,10 @@ export default function EmployeesScreen() {
   const [error, setError] = useState("");
 
   const loadEmployees = useCallback(async () => {
-    if (!user?.companyId) return;
+    if (!user?.companyId) {
+      setLoading(false);
+      return;
+    }
     try {
       setError("");
       const data = await employeeQueries.getEmployees(user.companyId);

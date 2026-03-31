@@ -8,11 +8,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
-    Animated,
-    Pressable,
-    useColorScheme,
-    View,
-    ViewStyle,
+  Animated,
+  Pressable,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from "react-native";
 
 interface FABOption {
@@ -83,6 +83,7 @@ export const FAB: React.FC<FABProps> = ({
     ...THEME.shadows.lg,
     position: "absolute",
     ...positionStyles[position],
+    zIndex: 3,
   };
 
   const optionsContainerStyle: ViewStyle = {
@@ -90,6 +91,7 @@ export const FAB: React.FC<FABProps> = ({
     bottom: THEME.componentSizes.fab.size + THEME.spacing.md,
     right: THEME.spacing.sm,
     gap: THEME.spacing.md,
+    zIndex: 2,
   };
 
   const optionButtonStyle: ViewStyle = {

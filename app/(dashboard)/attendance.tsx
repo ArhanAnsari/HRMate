@@ -6,21 +6,22 @@ import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
 import {
-    AttendanceRecord,
-    AttendanceStats,
-    attendanceService,
+  AttendanceRecord,
+  AttendanceStats,
+  attendanceService,
 } from "@/src/services/attendance.service";
 import { THEME } from "@/src/theme";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    FlatList,
-    RefreshControl,
-    SafeAreaView,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
-    useColorScheme,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+  useColorScheme,
 } from "react-native";
 
 export default function AttendanceScreen() {
@@ -122,18 +123,46 @@ export default function AttendanceScreen() {
       {
         label: "Present",
         value: stats.present.toString(),
-        icon: "check-circle",
+        icon: (
+          <MaterialCommunityIcons
+            name="check-circle"
+            size={24}
+            color={THEME.colors.primary}
+          />
+        ),
       },
-      { label: "Absent", value: stats.absent.toString(), icon: "close-circle" },
+      {
+        label: "Absent",
+        value: stats.absent.toString(),
+        icon: (
+          <MaterialCommunityIcons
+            name="close-circle"
+            size={24}
+            color={THEME.colors.danger}
+          />
+        ),
+      },
       {
         label: "On Time",
         value: stats.presentOnTime.toString(),
-        icon: "clock",
+        icon: (
+          <MaterialCommunityIcons
+            name="clock"
+            size={24}
+            color={THEME.colors.success}
+          />
+        ),
       },
       {
         label: "Late",
         value: stats.lateArrivals.toString(),
-        icon: "alert-circle",
+        icon: (
+          <MaterialCommunityIcons
+            name="alert-circle"
+            size={24}
+            color={THEME.colors.warning}
+          />
+        ),
       },
     ];
 

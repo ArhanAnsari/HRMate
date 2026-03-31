@@ -18,43 +18,46 @@ export default function DashboardLayout() {
   const tabConfig = [
     {
       name: "index",
-      title: "Dashboard",
-      icon: "view-dashboard-outline",
+      title: "Home",
+      icon: "home-outline",
     },
     {
       name: "employees",
-      title: "Employees",
-      icon: "account-multiple-outline",
+      title: "Team",
+      icon: "account-group-outline",
     },
     {
       name: "attendance",
-      title: "Attendance",
-      icon: "calendar-check-outline",
+      title: "Time",
+      icon: "clock-outline",
     },
     {
       name: "payroll",
-      title: "Payroll",
-      icon: "cash-multiple",
+      title: "Pay",
+      icon: "wallet-outline",
+      hidden: true,
+    },
+    {
+      name: "chat",
+      title: "AI Chat",
+      icon: "robot-outline",
     },
     {
       name: "leaves",
       title: "Leaves",
       icon: "calendar-plus-outline",
+      hidden: true,
     },
     {
       name: "insights",
       title: "Insights",
       icon: "chart-line",
-    },
-    {
-      name: "chat",
-      title: "AI",
-      icon: "robot-happy-outline",
+      hidden: true,
     },
     {
       name: "settings",
-      title: "More",
-      icon: "menu",
+      title: "Settings",
+      icon: "cog-outline",
     },
   ];
 
@@ -96,6 +99,7 @@ export default function DashboardLayout() {
           name={tab.name}
           options={{
             title: tab.title,
+            href: tab.hidden ? null : undefined,
             tabBarIcon: ({ color, focused }) => (
               <MaterialCommunityIcons
                 name={tab.icon as any}
@@ -138,6 +142,18 @@ export default function DashboardLayout() {
       />
       <Tabs.Screen
         name="profile"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="payslips"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="bulk-import"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="attendance_new"
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
     </Tabs>

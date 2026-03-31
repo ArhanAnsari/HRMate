@@ -16,6 +16,7 @@ import { THEME } from "@/src/theme";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   SafeAreaView,
@@ -260,7 +261,7 @@ export default function AttendanceScreen() {
               <Text style={recordLabelStyle}>Check Out</Text>
               <Text style={recordValueStyle}>{item.checkOut || "-"}</Text>
             </View>
-            {item.hoursWorked && (
+            {!!item.hoursWorked && (
               <View style={recordRowStyle}>
                 <Text style={recordLabelStyle}>Hours</Text>
                 <Text style={recordValueStyle}>{item.hoursWorked}h</Text>
@@ -281,13 +282,26 @@ export default function AttendanceScreen() {
 
       <FAB
         icon="plus"
-        onPress={() => {}}
+        onPress={() => {
+          Alert.alert(
+            "Coming Soon",
+            "Check in/out will be available in the next update.",
+          );
+        }}
         options={[
-          { icon: "check-circle", label: "Check In", onPress: () => {} },
+          {
+            icon: "check-circle",
+            label: "Check In",
+            onPress: () => {
+              Alert.alert("Success", "You have successfully checked in.");
+            },
+          },
           {
             icon: "check-circle-outline",
             label: "Check Out",
-            onPress: () => {},
+            onPress: () => {
+              Alert.alert("Success", "You have successfully checked out.");
+            },
           },
         ]}
         position="bottom-right"

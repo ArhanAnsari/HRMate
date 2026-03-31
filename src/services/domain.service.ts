@@ -25,6 +25,11 @@ export const payrollService = {
     const cId = companyId || (await getCurrentUserCompanyId());
     return payrollQueries.getPayslips(cId);
   },
+
+  async processPayroll(companyId?: string): Promise<number> {
+    const cId = companyId || (await getCurrentUserCompanyId());
+    return payrollQueries.processPayroll(cId);
+  },
 };
 
 /**

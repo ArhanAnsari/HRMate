@@ -63,7 +63,7 @@ export const STORAGE_BUCKETS = {
 // Gemini API Configuration
 export const GEMINI_CONFIG = {
   API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY || "",
-  MODEL: "gemini-2.5-flash",
+  MODEL: "gemini-1.5-flash",
 };
 
 export const IS_PRODUCTION = !__DEV__;

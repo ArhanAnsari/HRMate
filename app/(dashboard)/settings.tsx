@@ -6,6 +6,7 @@
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import BiometricAuthService from "@/src/services/biometric.service";
+import { account } from "@/src/services/appwrite";
 import { useAuthStore } from "@/src/state/auth.store";
 import { useBiometricStore } from "@/src/state/biometric.store";
 import { useNotificationStore } from "@/src/state/notifications.store";
@@ -16,23 +17,41 @@ import {
   ScrollView,
   Switch,
   Text,
+  TextInput,
   TextStyle,
+  TouchableOpacity,
   View,
   ViewStyle,
   useColorScheme,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { logout } = useAuthStore();
+  const { logout, user, checkAuth } = useAuthStore();
   const { biometricEnabled, setBiometricEnabled, biometricType } =
     useBiometricStore();
   const { notificationsEnabled, toggleNotificationsEnabled } =
     useNotificationStore();
   const [emailReminders, setEmailReminders] = useState(true);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  // Change Password modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Edit Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState(user?.name || "");
+  const [profileEmail, setProfileEmail] = useState(user?.email || "");
+  const [profileCurrentPassword, setProfileCurrentPassword] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     const checkBiometric = async () => {
@@ -67,6 +86,20 @@ export default function SettingsScreen() {
     color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
     marginBottom: THEME.spacing.md,
     marginTop: THEME.spacing.lg,
+  };
+
+  const modalInputStyle: TextStyle = {
+    borderWidth: 1,
+    borderColor: isDark ? THEME.dark.border : THEME.light.border,
+    borderRadius: THEME.borderRadius.md,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+    backgroundColor: isDark
+      ? THEME.dark.background.tertiary
+      : THEME.light.background.tertiary,
+    marginBottom: THEME.spacing.md,
+    fontSize: 14,
   };
 
   const renderSetting = (
@@ -134,6 +167,82 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      Alert.alert("Error", "New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords do not match.");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await account.updatePassword(newPassword, oldPassword);
+      setShowPasswordModal(false);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      Alert.alert("Success", "Password changed successfully.");
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error?.message || "Failed to change password. Please check your current password.",
+      );
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!profileName.trim()) {
+      Alert.alert("Error", "Name cannot be empty.");
+      return;
+    }
+    setProfileLoading(true);
+    try {
+      const promises: Promise<any>[] = [];
+
+      if (profileName.trim() !== user?.name) {
+        promises.push(account.updateName(profileName.trim()));
+      }
+
+      if (profileEmail.trim() !== (user?.email || "")) {
+        if (!profileCurrentPassword) {
+          Alert.alert("Error", "Current password is required to change email.");
+          setProfileLoading(false);
+          return;
+        }
+        promises.push(
+          account.updateEmail(profileEmail.trim(), profileCurrentPassword),
+        );
+      }
+
+      if (promises.length === 0) {
+        Alert.alert("Info", "No changes to save.");
+        setProfileLoading(false);
+        return;
+      }
+
+      await Promise.all(promises);
+      await checkAuth();
+      setShowProfileModal(false);
+      setProfileCurrentPassword("");
+      Alert.alert("Success", "Profile updated successfully.");
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error?.message || "Failed to update profile. Please try again.",
+      );
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={containerStyle}>
       <ScrollView
@@ -171,20 +280,20 @@ export default function SettingsScreen() {
         <PrimaryButton
           label="Change Password"
           onPress={() => {
-            Alert.alert(
-              "Coming Soon",
-              "Change Password will be available in the next update.",
-            );
+            setOldPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+            setShowPasswordModal(true);
           }}
           style={{ marginBottom: THEME.spacing.md }}
         />
         <PrimaryButton
           label="Edit Profile"
           onPress={() => {
-            Alert.alert(
-              "Coming Soon",
-              "Edit Profile will be available in the next update.",
-            );
+            setProfileName(user?.name || "");
+            setProfileEmail(user?.email || "");
+            setProfileCurrentPassword("");
+            setShowProfileModal(true);
           }}
           variant="secondary"
           style={{ marginBottom: THEME.spacing.md }}
@@ -231,6 +340,221 @@ export default function SettingsScreen() {
 
         <PrimaryButton label="Logout" onPress={handleLogout} variant="danger" />
       </ScrollView>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={showPasswordModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPasswordModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark
+                ? THEME.dark.background.main
+                : THEME.light.background.main,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: THEME.spacing.xl,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                marginBottom: THEME.spacing.lg,
+              }}
+            >
+              Change Password
+            </Text>
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Current Password"
+              placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+              secureTextEntry
+              value={oldPassword}
+              onChangeText={setOldPassword}
+              editable={!passwordLoading}
+            />
+            <TextInput
+              style={modalInputStyle}
+              placeholder="New Password (min 8 characters)"
+              placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+              editable={!passwordLoading}
+            />
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Confirm New Password"
+              placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              editable={!passwordLoading}
+            />
+            <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
+              <TouchableOpacity
+                onPress={() => setShowPasswordModal(false)}
+                disabled={passwordLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleChangePassword}
+                disabled={passwordLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: THEME.colors.primary,
+                }}
+              >
+                {passwordLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showProfileModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowProfileModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark
+                ? THEME.dark.background.main
+                : THEME.light.background.main,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: THEME.spacing.xl,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                marginBottom: THEME.spacing.lg,
+              }}
+            >
+              Edit Profile
+            </Text>
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Full Name"
+              placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+              value={profileName}
+              onChangeText={setProfileName}
+              editable={!profileLoading}
+            />
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Email"
+              placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={profileEmail}
+              onChangeText={setProfileEmail}
+              editable={!profileLoading}
+            />
+            {profileEmail.trim() !== (user?.email || "") && (
+              <TextInput
+                style={modalInputStyle}
+                placeholder="Current Password (required for email change)"
+                placeholderTextColor={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary}
+                secureTextEntry
+                value={profileCurrentPassword}
+                onChangeText={setProfileCurrentPassword}
+                editable={!profileLoading}
+              />
+            )}
+            <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
+              <TouchableOpacity
+                onPress={() => setShowProfileModal(false)}
+                disabled={profileLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleUpdateProfile}
+                disabled={profileLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: THEME.colors.primary,
+                }}
+              >
+                {profileLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
+

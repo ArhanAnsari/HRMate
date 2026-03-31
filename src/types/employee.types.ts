@@ -45,6 +45,8 @@ export interface EmployeeCreateInput {
   department: string;
   joiningDate: string;
   dateOfBirth?: string;
+  employmentType?: string;
+  baseSalary?: number;
   salaryStructure?: SalaryStructure;
 }
 

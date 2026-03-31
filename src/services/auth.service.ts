@@ -1,4 +1,4 @@
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { LoginCredentials, SignupData, User } from "../types";
 import {
@@ -39,7 +39,7 @@ export const authService = {
       await clearSessionIfExists();
 
       // Create auth account
-      await account.create("unique()", data.email, data.password, data.name);
+      await account.create(ID.unique(), data.email, data.password, data.name);
 
       // Create session for immediate authenticated flow
       await account.createEmailPasswordSession(data.email, data.password);
@@ -49,77 +49,45 @@ export const authService = {
       // Create company document
       let companyId = "";
       try {
+        const now = new Date().toISOString();
         const company = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.COMPANIES,
-          "unique()",
+          ID.unique(),
           {
             name: data.companyName,
-            email: data.email,
-            createdAt: new Date().toISOString(),
+            industry: "Other",
+            subscription_tier: "free",
+            created_by: authUser.$id,
+            created_at: now,
+            updated_at: now,
           },
         );
         companyId = company.$id;
       } catch {
-        // Best effort for alternate snake_case schemas
-        try {
-          const company = await databases.createDocument(
-            APPWRITE_CONFIG.DATABASE_ID,
-            DB_IDS.COMPANIES,
-            "unique()",
-            {
-              name: data.companyName,
-              email: data.email,
-              subscription_tier: "free",
-              is_active: true,
-              created_by: authUser.$id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          );
-          companyId = company.$id;
-        } catch {
-          companyId = "";
-        }
+        companyId = "";
       }
 
       // Create user document
       try {
+        const now = new Date().toISOString();
         const user = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.USERS,
-          "unique()",
+          ID.unique(),
           {
-            userId: authUser.$id,
             email: data.email,
-            name: data.name,
+            full_name: data.name,
             role: "admin",
-            companyId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            company_id: companyId,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
           },
         );
         return mapToUser(user, authUser);
       } catch {
-        try {
-          const user = await databases.createDocument(
-            APPWRITE_CONFIG.DATABASE_ID,
-            DB_IDS.USERS,
-            "unique()",
-            {
-              email: data.email,
-              full_name: data.name,
-              role: "admin",
-              company_id: companyId,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          );
-          return mapToUser(user, authUser);
-        } catch {
-          return mapToUser(null, authUser);
-        }
+        return mapToUser(null, authUser);
       }
     } catch (error) {
       throw new Error(handleAppwriteError(error));

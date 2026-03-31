@@ -9,6 +9,8 @@ const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+const AI_MODEL = "gemini-1.5-flash";
+
 export class GeminiAIService {
   static async generateAIInsights(data: {
     totalEmployees: number;
@@ -18,8 +20,11 @@ export class GeminiAIService {
     onLeaveCount: number;
     pendingLeavesCount: number;
   }): Promise<string> {
+    if (!GEMINI_API_KEY) {
+      return "AI insights not available. Configure EXPO_PUBLIC_GEMINI_API_KEY to enable.";
+    }
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
       const prompt = `As an HR analytics expert, provide 2-3 key insights about this workforce data in a friendly, actionable way:
       
@@ -44,8 +49,9 @@ Keep response concise (2-3 sentences max).`;
     salary: number,
     jobTitle: string,
   ): Promise<string> {
+    if (!GEMINI_API_KEY) return "AI not configured.";
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
       const prompt = `Explain this salary in simple, human terms for a ${jobTitle} earning $${salary} annually. Include what this salary might cover (rent, bills, etc.) in a major US city. Keep it to 2-3 sentences.`;
 
@@ -63,8 +69,15 @@ Keep response concise (2-3 sentences max).`;
     pendingLeavesCount?: number;
     unprocessedPayroll?: number;
   }): Promise<string[]> {
+    if (!GEMINI_API_KEY) {
+      return [
+        "Review attendance policies",
+        "Conduct employee surveys",
+        "Streamline payroll processes",
+      ];
+    }
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
       const issues = [];
       if (data.lowAttendanceEmployees) {
@@ -80,6 +93,10 @@ Keep response concise (2-3 sentences max).`;
       }
       if (data.unprocessedPayroll) {
         issues.push(`${data.unprocessedPayroll} unprocessed payrolls`);
+      }
+
+      if (issues.length === 0) {
+        return ["No critical issues detected.", "Keep monitoring HR metrics.", "Review employee engagement scores."];
       }
 
       const prompt = `As an HR consultant, provide 3 specific, actionable recommendations to address these workplace issues: ${issues.join(", ")}. Format as a numbered list (1. 2. 3.).`;
@@ -101,15 +118,21 @@ Keep response concise (2-3 sentences max).`;
     message: string,
     conversationHistory: Array<{ role: string; content: string }> = [],
   ): Promise<string> {
+    if (!GEMINI_API_KEY) {
+      return "AI features are not configured. Please set EXPO_PUBLIC_GEMINI_API_KEY in your environment to enable AI chat.";
+    }
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
-      const chat = model.startChat({
-        history: conversationHistory.map((msg) => ({
-          role: msg.role as "user" | "model",
+      // Gemini only accepts "user" and "model" roles, not "assistant"
+      const history = conversationHistory
+        .filter((msg) => msg.role === "user" || msg.role === "model" || msg.role === "assistant")
+        .map((msg) => ({
+          role: (msg.role === "assistant" ? "model" : msg.role) as "user" | "model",
           parts: [{ text: msg.content }],
-        })),
-      });
+        }));
+
+      const chat = model.startChat({ history });
 
       const result = await chat.sendMessage(message);
       return result.response.text();
@@ -122,8 +145,9 @@ Keep response concise (2-3 sentences max).`;
   static async analyzePayrollTrends(
     payrollData: Array<{ month: string; amount: number }>,
   ): Promise<string> {
+    if (!GEMINI_API_KEY) return "AI not configured.";
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
       const dataStr = payrollData
         .map((p) => `${p.month}: $${p.amount}`)

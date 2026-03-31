@@ -19,7 +19,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hrmate.app"
+      "bundleIdentifier": "com.arhanansari.HRMate"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +30,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.hrmate.app"
+      "package": "com.arhanansari.HRMate",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "output": "static",
@@ -64,11 +68,25 @@
           "icon": "assets/images/icon.png",
           "color": "#2563EB"
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "hrmate",
+          "organization": "arhanansari"
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "21342faf-9dd2-4030-9da8-c83a6e438b7f"
+      }
     }
   }
 }

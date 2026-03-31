@@ -10,6 +10,7 @@ import {
   AttendanceStats,
   attendanceService,
 } from "@/src/services/attendance.service";
+import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
@@ -27,6 +28,7 @@ import {
 export default function AttendanceScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuthStore();
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<AttendanceRecord[]>(
@@ -36,8 +38,10 @@ export default function AttendanceScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    loadAttendanceData();
-  }, []);
+    if (user?.companyId) {
+      loadAttendanceData();
+    }
+  }, [user?.companyId]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -52,11 +56,12 @@ export default function AttendanceScreen() {
   }, [searchQuery, records]);
 
   const loadAttendanceData = useCallback(async () => {
+    if (!user?.companyId) return;
     setLoading(true);
     try {
       const [todayStats, todayRecords] = await Promise.all([
-        attendanceService.getTodayStats(),
-        attendanceService.getTodayRecords(),
+        attendanceService.getTodayStats(user.companyId),
+        attendanceService.getTodayRecords(user.companyId),
       ]);
       setStats(todayStats);
       setRecords(todayRecords);
@@ -65,7 +70,7 @@ export default function AttendanceScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.companyId]);
 
   const containerStyle: ViewStyle = {
     flex: 1,

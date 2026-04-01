@@ -54,8 +54,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     joiningDate:
       initialEmployee?.joiningDate || new Date().toISOString().split("T")[0],
     dateOfBirth: initialEmployee?.dateOfBirth || "",
-    employmentType:
-      initialEmployee?.employmentType ?? "full_time",
+    employmentType: initialEmployee?.employmentType ?? "full_time",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -82,11 +81,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     try {
       await onSubmit({
         ...form,
-        firstName: SecurityService.sanitizeInput(form.firstName),
-        lastName: SecurityService.sanitizeInput(form.lastName),
-        email: SecurityService.sanitizeInput(form.email),
-        phone: SecurityService.sanitizeInput(form.phone),
-        position: SecurityService.sanitizeInput(form.position),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        position: form.position.trim(),
       });
     } catch (error) {
       Alert.alert(

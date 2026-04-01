@@ -3,24 +3,24 @@
  * AI-powered chatbot for HR queries, insights, and recommendations
  */
 
-import { PremiumCard } from "@/src/components/ui/PremiumCard";
-import { THEME } from "@/src/theme";
 import GeminiAIService from "@/src/services/gemini-ai.service";
+import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  Text,
-  TextInput,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-  useColorScheme,
-  ActivityIndicator,
+    ActivityIndicator,
+    Animated,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    Text,
+    TextInput,
+    TextStyle,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+    useColorScheme,
 } from "react-native";
 
 interface Message {
@@ -44,7 +44,8 @@ export default function AIAssistantScreen() {
     {
       id: "welcome",
       sender: "ai",
-      content: "Hi! I'm HRMate AI Assistant. I can help you with HR insights, employee analytics, and recommendations. What would you like to know?",
+      content:
+        "Hi! I'm HRMate AI Assistant. I can help you with HR insights, employee analytics, and recommendations. What would you like to know?",
       timestamp: Date.now(),
     },
   ]);
@@ -73,7 +74,7 @@ export default function AIAssistantScreen() {
       // Get AI response
       const aiResponse = await GeminiAIService.chatWithAI(
         text,
-        conversationHistory
+        conversationHistory,
       );
 
       const aiMessage: Message = {
@@ -119,62 +120,114 @@ export default function AIAssistantScreen() {
     marginBottom: THEME.spacing.sm,
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View
-      style={{
-        alignItems: item.sender === "user" ? "flex-end" : "flex-start",
-        marginHorizontal: THEME.spacing.lg,
-        marginVertical: THEME.spacing.sm,
-      }}
-    >
-      {item.sender === "ai" && (
-        <View style={{ flexDirection: "row", gap: THEME.spacing.sm, marginBottom: THEME.spacing.xs }}>
-          <MaterialCommunityIcons
-            name="robot-happy"
-            size={16}
-            color={THEME.colors.primary}
-          />
-          <Text
-            style={{
-              fontSize: 10,
-              fontWeight: "600",
-              color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
-            }}
-          >
-            AI Assistant
-          </Text>
-        </View>
-      )}
-      <PremiumCard
-        style={[
-          {
-            maxWidth: "85%",
-            paddingVertical: THEME.spacing.md,
-            backgroundColor:
-              item.sender === "user"
-                ? THEME.colors.primary
-                : isDark
-                ? THEME.dark.background.tertiary
-                : THEME.light.background.tertiary,
-          },
-        ]}
-      >
-        <Text
+  const MessageBubble = React.useCallback(
+    ({ item }: { item: Message }) => {
+      const fadeAnim = React.useRef(new Animated.Value(0)).current;
+      const translateYAnim = React.useRef(new Animated.Value(10)).current;
+
+      useEffect(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateYAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, []);
+
+      return (
+        <Animated.View
           style={{
-            fontSize: 14,
-            lineHeight: 20,
-            color:
-              item.sender === "user"
-                ? "#fff"
-                : isDark
-                ? THEME.dark.text.primary
-                : THEME.light.text.primary,
+            opacity: fadeAnim,
+            transform: [{ translateY: translateYAnim }],
+            alignItems: item.sender === "user" ? "flex-end" : "flex-start",
+            marginHorizontal: THEME.spacing.lg,
+            marginVertical: THEME.spacing.sm,
           }}
         >
-          {item.content}
-        </Text>
-      </PremiumCard>
-    </View>
+          {item.sender === "ai" && (
+            <View
+              style={{
+                flexDirection: "row",
+                gap: THEME.spacing.sm,
+                marginBottom: THEME.spacing.xs,
+              }}
+            >
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: THEME.colors.primary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="robot-happy"
+                  size={12}
+                  color="#fff"
+                />
+              </View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: isDark
+                    ? THEME.dark.text.secondary
+                    : THEME.light.text.secondary,
+                }}
+              >
+                HRMate AI
+              </Text>
+            </View>
+          )}
+          <View
+            style={[
+              {
+                maxWidth: "85%",
+                paddingHorizontal: THEME.spacing.lg,
+                paddingVertical: THEME.spacing.md,
+                borderRadius: 16,
+                borderBottomRightRadius: item.sender === "user" ? 4 : 16,
+                borderBottomLeftRadius: item.sender === "ai" ? 4 : 16,
+                backgroundColor:
+                  item.sender === "user"
+                    ? THEME.colors.primary
+                    : isDark
+                      ? THEME.dark.background.tertiary
+                      : THEME.light.background.tertiary,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color:
+                  item.sender === "user"
+                    ? "#fff"
+                    : isDark
+                      ? THEME.dark.text.primary
+                      : THEME.light.text.primary,
+              }}
+            >
+              {item.content}
+            </Text>
+          </View>
+        </Animated.View>
+      );
+    },
+    [isDark],
+  );
+
+  const renderMessage = ({ item }: { item: Message }) => (
+    <MessageBubble item={item} />
   );
 
   return (
@@ -183,7 +236,12 @@ export default function AIAssistantScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <View style={{ paddingHorizontal: THEME.spacing.lg, paddingVertical: THEME.spacing.md }}>
+        <View
+          style={{
+            paddingHorizontal: THEME.spacing.lg,
+            paddingVertical: THEME.spacing.md,
+          }}
+        >
           <Text style={titleStyle}>AI Assistant</Text>
           <Text
             style={{
@@ -262,10 +320,7 @@ export default function AIAssistantScreen() {
               paddingVertical: THEME.spacing.md,
             }}
           >
-            <ActivityIndicator
-              size="small"
-              color={THEME.colors.primary}
-            />
+            <ActivityIndicator size="small" color={THEME.colors.primary} />
           </View>
         )}
 
@@ -284,9 +339,7 @@ export default function AIAssistantScreen() {
             <TextInput
               placeholder="Type your message..."
               placeholderTextColor={
-                isDark
-                  ? THEME.dark.text.tertiary
-                  : THEME.light.text.tertiary
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
               }
               value={inputText}
               onChangeText={setInputText}
@@ -302,9 +355,7 @@ export default function AIAssistantScreen() {
                   ? THEME.dark.text.primary
                   : THEME.light.text.primary,
                 borderWidth: 1,
-                borderColor: isDark
-                  ? THEME.dark.border
-                  : THEME.light.border,
+                borderColor: isDark ? THEME.dark.border : THEME.light.border,
               }}
               editable={!loading}
             />
@@ -321,11 +372,7 @@ export default function AIAssistantScreen() {
                 opacity: loading || !inputText.trim() ? 0.5 : 1,
               }}
             >
-              <MaterialCommunityIcons
-                name="send"
-                size={20}
-                color="#fff"
-              />
+              <MaterialCommunityIcons name="send" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

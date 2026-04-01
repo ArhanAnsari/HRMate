@@ -1,22 +1,25 @@
 import { Logo } from "@/src/components/ui/Logo";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
+import { databases } from "@/src/services/appwrite";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ID } from "appwrite";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TextStyle,
-    TouchableOpacity,
-    useColorScheme,
-    View,
-    ViewStyle,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from "react-native";
 
 export default function SignupScreen() {
@@ -104,12 +107,44 @@ export default function SignupScreen() {
     setLocalError("");
 
     try {
+      // 1. Appwrite Auth Signup (also handles auth login)
       await signup(
         formData.email.trim().toLowerCase(),
         formData.password,
         formData.name.trim(),
         formData.companyName.trim(),
       );
+
+      const { user } = useAuthStore.getState();
+
+      if (user) {
+        // 2. Generate a unique companyId
+        const newCompanyId = ID.unique();
+
+        // 3. Store the newly registered user with companyId in the users_collection
+        try {
+          await databases.createDocument(
+            APPWRITE_CONFIG.DATABASE_ID,
+            DB_IDS.USERS,
+            user.$id,
+            {
+              email: user.email,
+              full_name: user.name,
+              role: "admin", // Provide default role if none
+              company_id: newCompanyId,
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          );
+        } catch (dbError) {
+          console.warn(
+            "Note: User may have already been saved by auth service, or there was an error.",
+            dbError,
+          );
+        }
+      }
+
       // Navigation handled by _layout.tsx auth guard
     } catch {
       // Error already set in auth store

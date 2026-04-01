@@ -16,9 +16,18 @@ export interface SalaryStructure {
   otherDeductions?: number;
 }
 
+export interface BankDetails {
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  branchName?: string;
+}
+
 export interface Employee {
   $id: string;
   companyId: string;
+  managerId?: string; // Relation to another Employee
   firstName: string;
   lastName: string;
   email: string;
@@ -34,6 +43,9 @@ export interface Employee {
   documents?: string[]; // Document IDs
   avatar?: string;
   address?: string;
+  panNumber?: string;
+  aadharNumber?: string;
+  bankDetails?: BankDetails;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +62,12 @@ export interface EmployeeCreateInput {
   employmentType?: string;
   baseSalary?: number;
   salaryStructure?: SalaryStructure;
+  panNumber?: string;
+  aadharNumber?: string;
+  bankDetails?: BankDetails;
+  managerId?: string;
 }
 
-export interface EmployeeUpdateInput extends Partial<EmployeeCreateInput> {}
+export interface EmployeeUpdateInput extends Partial<EmployeeCreateInput> {
+  status?: EmploymentStatus;
+}

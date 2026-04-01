@@ -9,10 +9,14 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Text } from "react-native";
 
+import { usePermissions } from "@/src/hooks/usePermissions";
+import { Action } from "@/src/utils/permissions";
+
 export default function DashboardLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const theme = isDark ? THEME.dark : THEME.light;
+  const { can } = usePermissions();
 
   // Tab configuration with icons and labels
   const tabConfig = [
@@ -25,6 +29,7 @@ export default function DashboardLayout() {
       name: "employees",
       title: "Team",
       icon: "account-group-outline",
+      hidden: !can(Action.VIEW_ALL_EMPLOYEES),
     },
     {
       name: "attendance",

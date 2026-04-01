@@ -1739,5 +1739,21 @@
     }
   ],
   "teams": [],
-  "topics": []
+  "topics": [
+    {
+      "$id": "all-employees",
+      "name": "All Employees",
+      "description": "General announcements"
+    },
+    {
+      "$id": "managers",
+      "name": "Managers",
+      "description": "Approvals and reporting"
+    },
+    {
+      "$id": "payroll-updates",
+      "name": "Payroll Updates",
+      "description": "Salary and payslip notifications"
+    }
+  ]
 }

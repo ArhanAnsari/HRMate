@@ -469,21 +469,37 @@ export const payrollQueries = {
         DB_IDS.PAYSLIPS,
         [
           Query.equal("company_id", companyId),
-          Query.orderDesc("month"),
+          Query.orderDesc("$createdAt"),
           Query.limit(limit),
         ],
       );
 
-      return payslips.documents.map((p: any) => ({
-        id: p.$id,
-        employee: p.employee_name || "N/A",
-        month: new Date(p.month).toLocaleDateString("en-US", {
+      return payslips.documents.map((p: any) => {
+        let employeeName = "N/A";
+        try {
+          if (p.breakdown) {
+            const bd = JSON.parse(p.breakdown);
+            if (bd && bd.employee_name) employeeName = bd.employee_name;
+          }
+        } catch (e) {}
+
+        const monthName = new Date(
+          p.year || 2024,
+          (p.month || 1) - 1,
+          1,
+        ).toLocaleDateString("en-US", {
           month: "short",
           year: "numeric",
-        }),
-        amount: `$${p.net_salary?.toLocaleString()}`,
-        status: p.status,
-      }));
+        });
+
+        return {
+          id: p.$id,
+          employee: employeeName,
+          month: monthName,
+          amount: `$${p.net_salary?.toLocaleString()}`,
+          status: p.status,
+        };
+      });
     } catch (error) {
       throw new Error(
         `Failed to fetch payslips: ${handleAppwriteError(error)}`,
@@ -507,8 +523,8 @@ export const payrollQueries = {
         throw new Error("No employees found to process payroll for.");
       }
 
-      const currentMonth =
-        new Date().toISOString().substring(0, 7) + "-01T00:00:00.000Z";
+      const currentMonthInt = new Date().getMonth() + 1;
+      const currentYearInt = new Date().getFullYear();
       let processedCount = 0;
 
       // 2. Process each employee
@@ -520,7 +536,8 @@ export const payrollQueries = {
           [
             Query.equal("company_id", companyId),
             Query.equal("employee_id", employee.$id),
-            Query.equal("month", currentMonth),
+            Query.equal("month", currentMonthInt),
+            Query.equal("year", currentYearInt),
           ],
         );
 
@@ -528,6 +545,10 @@ export const payrollQueries = {
 
         // Process and create payslip
         const netSalary = employee.base_salary || 50000;
+        const employeeName =
+          `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+          "Employee";
+
         await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.PAYSLIPS,
@@ -535,14 +556,19 @@ export const payrollQueries = {
           {
             company_id: companyId,
             employee_id: employee.$id,
-            employee_name: employee.name || "Employee",
-            month: currentMonth,
+            month: currentMonthInt,
+            year: currentYearInt,
             basic_salary: netSalary,
-            earnings: JSON.stringify({ hra: netSalary * 0.4 }),
-            deductions: JSON.stringify({ tax: netSalary * 0.1 }),
+            allowances: netSalary * 0.4,
+            deductions: netSalary * 0.1,
             gross_salary: netSalary * 1.4,
             net_salary: netSalary * 1.3,
             status: "paid",
+            breakdown: JSON.stringify({
+              employee_name: employeeName,
+              earnings: { hra: netSalary * 0.4 },
+              deductions: { tax: netSalary * 0.1 },
+            }),
           },
         );
         processedCount++;

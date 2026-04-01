@@ -17,13 +17,14 @@ import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  ScrollView,
-  Text,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-  useColorScheme,
+    Animated,
+    ScrollView,
+    Text,
+    TextStyle,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -198,11 +199,78 @@ export default function InsightsScreen() {
     leaveChartData.approved + leaveChartData.pending + leaveChartData.rejected >
     0;
 
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [loading]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={containerStyle}>
+        <ScrollView style={contentStyle}>
+          <Text style={titleStyle}>Insights</Text>
+          <SkeletonLoader
+            width="100%"
+            height={200}
+            style={{ marginBottom: THEME.spacing.md }}
+          />
+          <SkeletonLoader width="100%" height={200} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={containerStyle}>
+        <View
+          style={[
+            contentStyle,
+            { flex: 1, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="alert-circle-outline"
+            size={48}
+            color={THEME.colors.danger}
+          />
+          <Text
+            style={[
+              titleStyle,
+              { textAlign: "center", marginTop: THEME.spacing.md },
+            ]}
+          >
+            {error}
+          </Text>
+          <TouchableOpacity
+            style={{
+              marginTop: THEME.spacing.md,
+              padding: THEME.spacing.sm,
+              backgroundColor: THEME.colors.primary,
+              borderRadius: THEME.borderRadius.sm,
+            }}
+            onPress={loadData}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={containerStyle}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={contentStyle}
         showsVerticalScrollIndicator={false}
+        style={{ opacity: fadeAnim }}
       >
         <View
           style={{
@@ -264,9 +332,7 @@ export default function InsightsScreen() {
               {error}
             </Text>
             <TouchableOpacity onPress={loadData}>
-              <Text
-                style={{ color: THEME.colors.primary, fontWeight: "600" }}
-              >
+              <Text style={{ color: THEME.colors.primary, fontWeight: "600" }}>
                 Retry
               </Text>
             </TouchableOpacity>
@@ -288,8 +354,7 @@ export default function InsightsScreen() {
                   : THEME.light.text.primary,
               }}
             >
-              {aiInsights ||
-                "No AI insights available. Configure EXPO_PUBLIC_GEMINI_API_KEY to enable AI-powered analysis."}
+              {aiInsights || "No AI insights available at the moment."}
             </Text>
           </PremiumCard>
         )}
@@ -546,8 +611,7 @@ export default function InsightsScreen() {
                     textAlign: "center",
                   }}
                 >
-                  No recommendations available. Configure Gemini API key to
-                  enable AI-powered suggestions.
+                  No AI-powered recommendations available at the moment.
                 </Text>
               </PremiumCard>
             )}
@@ -555,7 +619,7 @@ export default function InsightsScreen() {
         )}
 
         <View style={{ height: THEME.spacing.xl }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

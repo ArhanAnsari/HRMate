@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "skills": {
+    "appwrite-cli": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "8943b6f41035246976fbd65c76ec9f9bf79fb4bb0fc898a9a6de00a4e41dd78c"
+    },
+    "appwrite-dart": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9d027a06b6f04fe460922adca908765eb6d73ef5bb16aedc336aa4056bb2328b"
+    },
+    "appwrite-dotnet": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "652f623c6e08b34774c79c2f3e977211d891c691b39131a5b699510b04458ff6"
+    },
+    "appwrite-go": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "b4faf2aae463367f076c82ebbfcb15bff0b4d5dff94a7fa790ec102a752cb71c"
+    },
+    "appwrite-kotlin": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a5f2220a1b0e83698fb8e0b5ce50176dd2a77d24a8acf4535134a05e3040ecc5"
+    },
+    "appwrite-php": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "83b4d432141cdc5530471d52fe8595912b6572377a996560e6db1b134da4d617"
+    },
+    "appwrite-python": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "4567854de4d228f23dd3472370f1dc6b88cdbba35d6e6bd711e8d494f1343908"
+    },
+    "appwrite-ruby": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "04e156f4ac8db90f6667715b86d11bf63951da89ba70236fedc6f3da591a36bb"
+    },
+    "appwrite-swift": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "962dfd5a396864bb1554af8cc15ba92ed2847925ff353700168953971b9f97f3"
+    },
+    "appwrite-typescript": {
+      "source": "appwrite/agent-skills",
+      "sourceType": "github",
+      "computedHash": "c2654d10a77e48197df43d29b3dcfe230b6f3b8efc81c5566f0f45afffb28e09"
+    }
+  }
+}

@@ -9,13 +9,18 @@ import { FAB } from "@/src/components/ui/FAB";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
 import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
-import { employeeQueries } from "@/src/services/appwriteClient";
+import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
+import { usePermissions } from "@/src/hooks/usePermissions";
+import { appwriteClient } from "@/src/services/appwrite";
 import { useAuthStore } from "@/src/state/auth.store";
+import { useEmployeeStore } from "@/src/state/employee.store";
 import { THEME } from "@/src/theme";
+import { Action } from "@/src/utils/permissions";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Pressable,
   RefreshControl,
@@ -28,6 +33,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Local interface used for the view
 interface EmployeeItem {
   id: string;
   name: string;
@@ -45,45 +51,123 @@ const FILTER_OPTIONS = [
   { label: "Inactive", value: "inactive" },
 ];
 
+const FilterChip = ({
+  filter,
+  isActive,
+  onPress,
+  isDark,
+  baseStyle,
+  textStyle,
+}: any) => {
+  const animValue = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: isActive ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isActive]);
+
+  const backgroundColor = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      isDark ? THEME.dark.background.main : THEME.light.background.main,
+      THEME.colors.primary,
+    ],
+  });
+
+  const textColor = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+      "#FFFFFF",
+    ],
+  });
+
+  const borderColor = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      isDark ? THEME.dark.border : THEME.light.border,
+      THEME.colors.primary,
+    ],
+  });
+
+  return (
+    <Pressable onPress={onPress}>
+      <Animated.View style={[baseStyle, { backgroundColor, borderColor }]}>
+        <Animated.Text style={[textStyle, { color: textColor }]}>
+          {filter.label}
+        </Animated.Text>
+      </Animated.View>
+    </Pressable>
+  );
+};
+
 export default function EmployeesScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user } = useAuthStore();
+  const { can } = usePermissions();
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+
+  const {
+    employees,
+    isLoading: loading,
+    error,
+    fetchEmployees,
+  } = useEmployeeStore();
 
   const loadEmployees = useCallback(async () => {
     if (!user?.companyId) {
-      setLoading(false);
       return;
     }
-    try {
-      setError("");
-      const data = await employeeQueries.getEmployees(user.companyId);
-      setEmployees(data as unknown as EmployeeItem[]);
-    } catch (err: any) {
-      setError(err.message || "Failed to load employees");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [user?.companyId]);
+    await fetchEmployees(user.companyId);
+    setRefreshing(false);
+  }, [user?.companyId, fetchEmployees]);
 
   useEffect(() => {
+    let unsubscribe: () => void;
+
     loadEmployees();
-  }, [loadEmployees]);
+
+    if (user?.companyId) {
+      // Realtime subscription to the employees collection
+      const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${DB_IDS.EMPLOYEES}.documents`;
+      unsubscribe = appwriteClient.subscribe(channel, (response) => {
+        const payload = response.payload as any;
+        if (payload && payload.company_id === user.companyId) {
+          fetchEmployees(user.companyId);
+        }
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [loadEmployees, user?.companyId, fetchEmployees]);
 
   const handleRefresh = () => {
     setRefreshing(true);
     loadEmployees();
   };
 
-  const filteredEmployees = employees.filter(
+  const mappedEmployees: EmployeeItem[] = React.useMemo(() => {
+    return employees.map((e) => ({
+      id: e.$id,
+      name: `${e.firstName} ${e.lastName}`,
+      position: e.position,
+      department: e.department,
+      email: e.email,
+      phone: e.phone,
+      status: e.status as any,
+    }));
+  }, [employees]);
+
+  const filteredEmployees = mappedEmployees.filter(
     (emp) =>
       (selectedFilter === "all" || emp.status === selectedFilter) &&
       (emp.name?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -347,31 +431,27 @@ export default function EmployeesScreen() {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={filterContainerStyle}
-      >
-        {FILTER_OPTIONS.map((filter) => (
-          <Pressable
-            key={filter.value}
-            onPress={() => setSelectedFilter(filter.value)}
-            style={[
-              filterChipStyle,
-              selectedFilter === filter.value && filterChipActiveStyle,
-            ]}
-          >
-            <Text
-              style={[
-                filterChipTextStyle,
-                selectedFilter === filter.value && filterChipTextActiveStyle,
-              ]}
-            >
-              {filter.label}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={filterContainerStyle}
+        >
+          {FILTER_OPTIONS.map((filter) => {
+            return (
+              <FilterChip
+                key={filter.value}
+                filter={filter}
+                isActive={selectedFilter === filter.value}
+                onPress={() => setSelectedFilter(filter.value)}
+                isDark={isDark}
+                baseStyle={filterChipStyle}
+                textStyle={filterChipTextStyle}
+              />
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {error ? (
         <View
@@ -425,23 +505,25 @@ export default function EmployeesScreen() {
       )}
 
       {/* Floating Action Button */}
-      <FAB
-        icon="plus"
-        onPress={() => router.push("/(dashboard)/employees/add")}
-        options={[
-          {
-            icon: "account-plus",
-            label: "Add Employee",
-            onPress: () => router.push("/(dashboard)/employees/add"),
-          },
-          {
-            icon: "upload",
-            label: "Bulk Import",
-            onPress: () => router.push("/(dashboard)/employees/bulk-import"),
-          },
-        ]}
-        position="bottom-right"
-      />
+      {can(Action.ADD_EMPLOYEE) && (
+        <FAB
+          icon="plus"
+          onPress={() => router.push("/(dashboard)/employees/add")}
+          options={[
+            {
+              icon: "account-plus",
+              label: "Add Employee",
+              onPress: () => router.push("/(dashboard)/employees/add"),
+            },
+            {
+              icon: "upload",
+              label: "Bulk Import",
+              onPress: () => router.push("/(dashboard)/employees/bulk-import"),
+            },
+          ]}
+          position="bottom-right"
+        />
+      )}
     </SafeAreaView>
   );
 }

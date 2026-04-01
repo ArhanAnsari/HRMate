@@ -15,18 +15,25 @@ const mapDocToEmployee = (doc: any): Employee => ({
   department: doc.department || "",
   // Normalize to date-only (YYYY-MM-DD) for consistent UI display
   joiningDate:
-    typeof doc.joining_date === "string"
-      ? doc.joining_date.split("T")[0]
-      : "",
+    typeof doc.joining_date === "string" ? doc.joining_date.split("T")[0] : "",
   dateOfBirth:
     typeof doc.date_of_birth === "string"
       ? doc.date_of_birth.split("T")[0]
       : undefined,
   status: doc.status || "active",
   employmentType: doc.employment_type || "full_time",
-  baseSalary: typeof doc.base_salary === "number" ? doc.base_salary : doc.base_salary !== undefined ? parseFloat(doc.base_salary) || undefined : undefined,
+  baseSalary:
+    typeof doc.base_salary === "number"
+      ? doc.base_salary
+      : doc.base_salary !== undefined
+        ? parseFloat(doc.base_salary) || undefined
+        : undefined,
   avatar: doc.profile_image,
   address: doc.address,
+  panNumber: doc.pan_number,
+  aadharNumber: doc.aadhar_number,
+  managerId: doc.manager_id,
+  bankDetails: doc.bank_details ? JSON.parse(doc.bank_details) : undefined,
   createdAt: doc.created_at || doc.$createdAt || new Date().toISOString(),
   updatedAt: doc.updated_at || doc.$updatedAt || new Date().toISOString(),
 });
@@ -45,12 +52,17 @@ const mapInputToDoc = (data: EmployeeCreateInput, companyId: string) => {
     joining_date: data.joiningDate
       ? new Date(data.joiningDate).toISOString()
       : now,
-    ...(data.dateOfBirth
-      ? { date_of_birth: new Date(data.dateOfBirth).toISOString() }
-      : {}),
+    date_of_birth:
+      data.dateOfBirth && !isNaN(new Date(data.dateOfBirth).getTime())
+        ? new Date(data.dateOfBirth).toISOString()
+        : null,
     status: "active",
     employment_type: data.employmentType || "full_time",
     ...(data.baseSalary !== undefined ? { base_salary: data.baseSalary } : {}),
+    pan_number: data.panNumber,
+    aadhar_number: data.aadharNumber,
+    manager_id: data.managerId,
+    bank_details: data.bankDetails ? JSON.stringify(data.bankDetails) : null,
     created_at: now,
     updated_at: now,
   };
@@ -69,7 +81,11 @@ export const employeeService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        [Query.equal("company_id", companyId), Query.limit(limit), Query.offset(offset)],
+        [
+          Query.equal("company_id", companyId),
+          Query.limit(limit),
+          Query.offset(offset),
+        ],
       );
       return response.documents.map(mapDocToEmployee);
     } catch (error) {
@@ -124,20 +140,35 @@ export const employeeService = {
     data: EmployeeUpdateInput,
   ): Promise<Employee> {
     try {
-      const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
       if (data.firstName !== undefined) updateData.first_name = data.firstName;
       if (data.lastName !== undefined) updateData.last_name = data.lastName;
       if (data.email !== undefined) updateData.email = data.email;
       if (data.phone !== undefined) updateData.phone = data.phone;
       if (data.position !== undefined) updateData.position = data.position;
-      if (data.department !== undefined) updateData.department = data.department;
+      if (data.department !== undefined)
+        updateData.department = data.department;
       if (data.joiningDate !== undefined)
         updateData.joining_date = new Date(data.joiningDate).toISOString();
-      if (data.dateOfBirth !== undefined)
-        updateData.date_of_birth = new Date(data.dateOfBirth).toISOString();
+      if (data.dateOfBirth !== undefined) {
+        updateData.date_of_birth =
+          data.dateOfBirth && !isNaN(new Date(data.dateOfBirth).getTime())
+            ? new Date(data.dateOfBirth).toISOString()
+            : null;
+      }
       if (data.employmentType !== undefined)
         updateData.employment_type = data.employmentType;
-      if (data.baseSalary !== undefined) updateData.base_salary = data.baseSalary;
+      if (data.baseSalary !== undefined)
+        updateData.base_salary = data.baseSalary;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.panNumber !== undefined) updateData.pan_number = data.panNumber;
+      if (data.aadharNumber !== undefined)
+        updateData.aadhar_number = data.aadharNumber;
+      if (data.managerId !== undefined) updateData.manager_id = data.managerId;
+      if (data.bankDetails !== undefined)
+        updateData.bank_details = JSON.stringify(data.bankDetails);
 
       const response = await databases.updateDocument(
         APPWRITE_CONFIG.DATABASE_ID,

@@ -60,24 +60,12 @@ export const STORAGE_BUCKETS = {
     process.env.EXPO_PUBLIC_COMPANY_LOGOS_BUCKET || "company_logos",
 };
 
-// Gemini API Configuration
-export const GEMINI_CONFIG = {
-  API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY || "",
-  MODEL: "gemini-1.5-flash",
-};
-
 export const IS_PRODUCTION = !__DEV__;
 
 // Validation
 if (!APPWRITE_CONFIG.PROJECT_ID || APPWRITE_CONFIG.PROJECT_ID === "default") {
   console.warn(
     "⚠️ Appwrite Project ID not configured. Set EXPO_PUBLIC_APPWRITE_PROJECT_ID in .env",
-  );
-}
-
-if (!GEMINI_CONFIG.API_KEY) {
-  console.warn(
-    "⚠️ Gemini API Key not configured. Set EXPO_PUBLIC_GEMINI_API_KEY in .env to enable AI features",
   );
 }
 

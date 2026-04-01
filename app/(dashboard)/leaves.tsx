@@ -5,11 +5,16 @@
 import { FAB } from "@/src/components/ui/FAB";
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
+import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
+import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
+import { usePermissions } from "@/src/hooks/usePermissions";
+import { appwriteClient } from "@/src/services/appwrite";
 import { leavesService } from "@/src/services/leaves.service";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { LeaveType } from "@/src/types";
-import React, { useEffect, useState } from "react";
+import { Action } from "@/src/utils/permissions";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +37,7 @@ export default function LeavesScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user } = useAuthStore();
+  const { can } = usePermissions();
   const [leaveStats, setLeaveStats] = useState<any>(null);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,20 +50,16 @@ export default function LeavesScreen() {
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    if (user?.companyId && user?.$id) {
-      loadLeaveData();
-    }
-  }, [user?.companyId, user?.$id]);
-
-  const loadLeaveData = async () => {
+  const loadLeaveData = useCallback(async () => {
     if (!user?.companyId || !user?.$id) return;
 
     setLoading(true);
     try {
       const [stats, requests] = await Promise.all([
         leavesService.getLeaveBalance(user.companyId, user.$id),
-        leavesService.getEmployeeLeaves(user.companyId, user.$id),
+        can(Action.VIEW_ALL_LEAVES)
+          ? leavesService.getPendingLeaves(user.companyId)
+          : leavesService.getEmployeeLeaves(user.companyId, user.$id),
       ]);
 
       setLeaveStats({
@@ -78,7 +80,28 @@ export default function LeavesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.companyId, user?.$id, user?.role]);
+
+  useEffect(() => {
+    let unsubscribe: () => void;
+
+    if (user?.companyId && user?.$id) {
+      loadLeaveData();
+
+      // Realtime subscription to the leaves collection
+      const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${DB_IDS.LEAVES}.documents`;
+      unsubscribe = appwriteClient.subscribe(channel, (response) => {
+        const payload = response.payload as any;
+        if (payload && payload.company_id === user.companyId) {
+          loadLeaveData();
+        }
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [loadLeaveData, user?.companyId, user?.$id]);
 
   const handleApplyLeave = async () => {
     if (!startDate || !endDate || !reason.trim()) {
@@ -131,6 +154,46 @@ export default function LeavesScreen() {
       );
     } finally {
       setApplyLoading(false);
+    }
+  };
+
+  const handleCancelLeave = async (leaveId: string) => {
+    Alert.alert(
+      "Cancel Leave",
+      "Are you sure you want to cancel this leave application?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await leavesService.cancelLeave(leaveId);
+              loadLeaveData();
+            } catch (error) {
+              Alert.alert("Error", "Failed to cancel leave request.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleApproveLeave = async (leaveId: string) => {
+    try {
+      await leavesService.approveLeave(leaveId, user!.$id, "Approved");
+      loadLeaveData();
+    } catch (error) {
+      Alert.alert("Error", "Failed to approve leave request.");
+    }
+  };
+
+  const handleRejectLeave = async (leaveId: string) => {
+    try {
+      await leavesService.rejectLeave(leaveId, user!.$id, "Rejected");
+      loadLeaveData();
+    } catch (error) {
+      Alert.alert("Error", "Failed to reject leave request.");
     }
   };
 
@@ -296,6 +359,67 @@ export default function LeavesScreen() {
           </Text>
         </View>
       </View>
+
+      {item.status === "pending" && (
+        <View
+          style={{
+            flexDirection: "row",
+            marginTop: THEME.spacing.md,
+            gap: THEME.spacing.sm,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              padding: 8,
+              backgroundColor: THEME.colors.danger,
+              borderRadius: 6,
+              flex: 1,
+              alignItems: "center",
+            }}
+            onPress={() => handleCancelLeave(item.$id)}
+          >
+            <Text style={{ color: "white", fontSize: 13, fontWeight: "600" }}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          {can(Action.APPROVE_LEAVES) && (
+            <>
+              <TouchableOpacity
+                style={{
+                  padding: 8,
+                  backgroundColor: THEME.colors.success,
+                  borderRadius: 6,
+                  flex: 1,
+                  alignItems: "center",
+                }}
+                onPress={() => handleApproveLeave(item.$id)}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 13, fontWeight: "600" }}
+                >
+                  Approve
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  padding: 8,
+                  backgroundColor: THEME.colors.warning,
+                  borderRadius: 6,
+                  flex: 1,
+                  alignItems: "center",
+                }}
+                onPress={() => handleRejectLeave(item.$id)}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 13, fontWeight: "600" }}
+                >
+                  Reject
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
     </PremiumCard>
   );
 
@@ -358,6 +482,12 @@ export default function LeavesScreen() {
                     />
                   )}
                 </View>
+              </View>
+            )}
+
+            {loading && (
+              <View style={{ marginTop: THEME.spacing.md }}>
+                <SkeletonLoader type="card" count={3} />
               </View>
             )}
 
@@ -429,7 +559,9 @@ export default function LeavesScreen() {
               style={{
                 fontSize: 20,
                 fontWeight: "700",
-                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                color: isDark
+                  ? THEME.dark.text.primary
+                  : THEME.light.text.primary,
                 marginBottom: THEME.spacing.lg,
               }}
             >
@@ -441,7 +573,9 @@ export default function LeavesScreen() {
               style={{
                 fontSize: 13,
                 fontWeight: "600",
-                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                color: isDark
+                  ? THEME.dark.text.secondary
+                  : THEME.light.text.secondary,
                 marginBottom: THEME.spacing.sm,
               }}
             >
@@ -551,7 +685,9 @@ export default function LeavesScreen() {
               >
                 <Text
                   style={{
-                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    color: isDark
+                      ? THEME.dark.text.primary
+                      : THEME.light.text.primary,
                     fontWeight: "600",
                   }}
                 >

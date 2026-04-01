@@ -4,24 +4,36 @@
  * All data sourced from real Appwrite backend
  */
 
+import { AttendanceChart, LeaveChart } from "@/src/components/Charts";
+import { NotificationCenter } from "@/src/components/NotificationCenter";
 import { FAB } from "@/src/components/ui/FAB";
 import { MetricCard } from "@/src/components/ui/MetricCard";
+import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
+import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
+import { usePermissions } from "@/src/hooks/usePermissions";
+import { analyticsService } from "@/src/services/analytics.service";
+import { appwriteClient } from "@/src/services/appwrite";
 import { employeeQueries } from "@/src/services/appwriteClient";
 import { leavesService } from "@/src/services/leaves.service";
 import { useAuthStore } from "@/src/state/auth.store";
+import { useNotificationStore } from "@/src/state/notifications.store";
 import { THEME } from "@/src/theme";
+import { Action } from "@/src/utils/permissions";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
+import Animated, { FadeInDown, Layout, ZoomIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface DashboardMetrics {
@@ -34,9 +46,11 @@ interface DashboardMetrics {
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { can } = usePermissions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalEmployees: 0,
     activeEmployees: 0,
@@ -44,21 +58,39 @@ export default function DashboardScreen() {
     pendingLeaves: 0,
   });
 
+  const [attendanceTrendData, setAttendanceTrendData] = useState<{
+    dates: string[];
+    attendanceRates: number[];
+  }>({ dates: [], attendanceRates: [] });
+
+  const [leaveChartData, setLeaveChartData] = useState({
+    approved: 0,
+    pending: 0,
+    rejected: 0,
+  });
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { unreadCount } = useNotificationStore();
+
   const loadDashboardData = useCallback(async () => {
     if (!user?.companyId) {
       setLoading(false);
+      setRefreshing(false);
       return;
     }
 
     try {
-      const [empStats, leaveStats] = await Promise.all([
-        employeeQueries.getEmployeeStats(user.companyId),
-        leavesService.getLeaveStats(user.companyId).catch(() => ({
-          pending: 0,
-          approved: 0,
-          rejected: 0,
-        })),
-      ]);
+      const [empStats, leaveStats, attendanceTrends, leaveDistribution] =
+        await Promise.all([
+          employeeQueries.getEmployeeStats(user.companyId),
+          leavesService.getLeaveStats(user.companyId).catch(() => ({
+            pending: 0,
+            approved: 0,
+            rejected: 0,
+          })),
+          analyticsService.getAttendanceTrends(user.companyId),
+          analyticsService.getLeaveDistribution(user.companyId),
+        ]);
 
       setMetrics({
         totalEmployees: empStats.total,
@@ -66,14 +98,58 @@ export default function DashboardScreen() {
         onLeaveCount: empStats.onLeave,
         pendingLeaves: leaveStats.pending,
       });
+
+      setAttendanceTrendData({
+        dates: attendanceTrends.map((t) => t.day),
+        attendanceRates: attendanceTrends.map((t) => t.rate),
+      });
+
+      setLeaveChartData({
+        approved: leaveDistribution.approved,
+        pending: leaveDistribution.pending,
+        rejected: leaveDistribution.rejected,
+      });
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [user?.companyId]);
 
   useEffect(() => {
+    let unsubscribeEmp: () => void;
+    let unsubscribeLeaves: () => void;
+
+    loadDashboardData();
+
+    if (user?.companyId) {
+      // Subscriptions for automatic rapid updates
+      const empChannel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${DB_IDS.EMPLOYEES}.documents`;
+      unsubscribeEmp = appwriteClient.subscribe(empChannel, () => {
+        loadDashboardData();
+      });
+
+      const leaveChannel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${DB_IDS.LEAVES}.documents`;
+      unsubscribeLeaves = appwriteClient.subscribe(leaveChannel, () => {
+        loadDashboardData();
+      });
+    }
+
+    // Auto-refresh fallback
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      if (unsubscribeEmp) unsubscribeEmp();
+      if (unsubscribeLeaves) unsubscribeLeaves();
+    };
+  }, [loadDashboardData, user?.companyId]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     loadDashboardData();
   }, [loadDashboardData]);
 
@@ -197,100 +273,293 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         contentContainerStyle={{
           paddingBottom: THEME.spacing.xl,
         }}
       >
         <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.greeting}>
-              {getGreeting()}, {user?.name?.split(" ")[0] || "Manager"}! 👋
-            </Text>
-            <Text style={styles.subheader}>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
+          {/* Header Row */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: THEME.spacing.xl,
+            }}
+          >
+            <Animated.View
+              entering={FadeInDown.springify()}
+              style={{ flex: 1 }}
+            >
+              <Text style={styles.greeting}>
+                {getGreeting()}, {user?.name?.split(" ")[0] || "Manager"}! 👋
+              </Text>
+              <Text style={styles.subheader}>
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </Text>
+            </Animated.View>
+            <Pressable
+              onPress={() => setShowNotifications(true)}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: isDark
+                  ? THEME.dark.background.tertiary
+                  : THEME.light.background.tertiary,
+                justifyContent: "center",
+                alignItems: "center",
+                opacity: pressed ? 0.7 : 1,
+                borderWidth: 1,
+                borderColor: isDark ? THEME.dark.border : THEME.light.border,
               })}
-            </Text>
+            >
+              <MaterialCommunityIcons
+                name="bell-outline"
+                size={22}
+                color={
+                  isDark ? THEME.dark.text.primary : THEME.light.text.primary
+                }
+              />
+              {unreadCount > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 10,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: THEME.colors.danger,
+                    borderWidth: 2,
+                    borderColor: isDark
+                      ? THEME.dark.background.tertiary
+                      : THEME.light.background.tertiary,
+                  }}
+                />
+              )}
+            </Pressable>
           </View>
 
           {/* Quick Stats - Key Metrics */}
-          <Text style={styles.sectionTitle}>Quick Stats</Text>
+          <Animated.Text
+            entering={FadeInDown.delay(100).springify()}
+            style={styles.sectionTitle}
+          >
+            Quick Stats
+          </Animated.Text>
           {loading ? (
             <SkeletonLoader type="card" count={2} />
           ) : (
-            <View style={styles.metricsGrid}>
+            <Animated.View
+              entering={FadeInDown.delay(150).springify()}
+              style={styles.metricsGrid}
+              layout={Layout.springify()}
+            >
               {metricCards.map((metric, index) => (
-                <View key={index} style={styles.metricCardWrapper}>
+                <Animated.View
+                  key={index}
+                  style={styles.metricCardWrapper}
+                  entering={ZoomIn.delay(index * 100).springify()}
+                >
                   <MetricCard
                     label={metric.label}
                     value={metric.value}
                     icon={metric.icon}
                     onPress={metric.onPress}
                   />
-                </View>
+                </Animated.View>
               ))}
-            </View>
+            </Animated.View>
+          )}
+
+          {/* Charts Hub */}
+          <Animated.Text
+            entering={FadeInDown.delay(180).springify()}
+            style={styles.sectionTitle}
+          >
+            Analytics Overview
+          </Animated.Text>
+          {loading ? (
+            <SkeletonLoader type="card" count={2} />
+          ) : (
+            <Animated.View entering={FadeInDown.delay(190).springify()}>
+              <PremiumCard
+                style={{
+                  marginBottom: THEME.spacing.lg,
+                  alignItems: "center",
+                  padding:
+                    attendanceTrendData.dates.length > 0 ? 0 : THEME.spacing.md,
+                }}
+              >
+                {attendanceTrendData.dates.length > 0 ? (
+                  <>
+                    <View style={{ width: "100%", padding: THEME.spacing.md }}>
+                      <Text
+                        style={{
+                          fontWeight: "600",
+                          color: isDark
+                            ? THEME.dark.text.primary
+                            : THEME.light.text.primary,
+                        }}
+                      >
+                        Attendance Trends
+                      </Text>
+                    </View>
+                    <AttendanceChart data={attendanceTrendData} />
+                  </>
+                ) : (
+                  <View
+                    style={{
+                      height: 120,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: isDark
+                          ? THEME.dark.text.secondary
+                          : THEME.light.text.secondary,
+                      }}
+                    >
+                      No attendance data for the past 7 days
+                    </Text>
+                  </View>
+                )}
+              </PremiumCard>
+
+              <PremiumCard
+                style={{
+                  marginBottom: THEME.spacing.lg,
+                  alignItems: "center",
+                  padding:
+                    leaveChartData.approved +
+                      leaveChartData.pending +
+                      leaveChartData.rejected >
+                    0
+                      ? 0
+                      : THEME.spacing.md,
+                }}
+              >
+                {leaveChartData.approved +
+                  leaveChartData.pending +
+                  leaveChartData.rejected >
+                0 ? (
+                  <>
+                    <View style={{ width: "100%", padding: THEME.spacing.md }}>
+                      <Text
+                        style={{
+                          fontWeight: "600",
+                          color: isDark
+                            ? THEME.dark.text.primary
+                            : THEME.light.text.primary,
+                        }}
+                      >
+                        Leave Distribution
+                      </Text>
+                    </View>
+                    <LeaveChart data={leaveChartData} />
+                  </>
+                ) : (
+                  <View
+                    style={{
+                      height: 120,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: isDark
+                          ? THEME.dark.text.secondary
+                          : THEME.light.text.secondary,
+                      }}
+                    >
+                      No leave distribution data
+                    </Text>
+                  </View>
+                )}
+              </PremiumCard>
+            </Animated.View>
           )}
 
           {/* AI Insights Highlight */}
-          <Text style={styles.sectionTitle}>AI Insights</Text>
-          <Pressable
-            onPress={() => router.push("/(dashboard)/insights")}
-            style={({ pressed }) => [
-              styles.aiCard,
-              pressed && { opacity: 0.6 },
-            ]}
+          <Animated.Text
+            entering={FadeInDown.delay(200).springify()}
+            style={styles.sectionTitle}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                gap: THEME.spacing.sm,
-                marginBottom: THEME.spacing.sm,
-              }}
+            AI Insights
+          </Animated.Text>
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <Pressable
+              onPress={() => router.push("/(dashboard)/insights")}
+              style={({ pressed }) => [
+                styles.aiCard,
+                pressed && { opacity: 0.6, transform: [{ scale: 0.98 }] },
+              ]}
             >
-              <Text style={{ fontSize: 20 }}>🤖</Text>
-              <Text style={styles.sectionTitle}>AI Recommendations</Text>
-            </View>
-            <Text style={styles.aiText}>
-              • View attendance trends and analytics in Insights tab
-            </Text>
-            <Text style={styles.aiText}>
-              • Ask HR Assistant any HR-related questions
-            </Text>
-            <Text style={styles.aiText}>
-              • Monitor payroll distribution and employee performance
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: THEME.spacing.sm,
-                marginTop: THEME.spacing.md,
-              }}
-            >
-              <Text
+              <View
                 style={{
-                  color: THEME.colors.primary,
-                  fontWeight: "600",
-                  fontSize: 14,
+                  flexDirection: "row",
+                  gap: THEME.spacing.sm,
+                  marginBottom: THEME.spacing.sm,
                 }}
               >
-                View All Insights
+                <Text style={{ fontSize: 20 }}>🤖</Text>
+                <Text style={styles.sectionTitle}>AI Recommendations</Text>
+              </View>
+              <Text style={styles.aiText}>
+                • View attendance trends and analytics in Insights tab
               </Text>
-              <MaterialCommunityIcons
-                name="arrow-right"
-                size={18}
-                color={THEME.colors.primary}
-              />
-            </View>
-          </Pressable>
+              <Text style={styles.aiText}>
+                • Ask HR Assistant any HR-related questions
+              </Text>
+              <Text style={styles.aiText}>
+                • Monitor payroll distribution and employee performance
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: THEME.spacing.sm,
+                  marginTop: THEME.spacing.md,
+                }}
+              >
+                <Text
+                  style={{
+                    color: THEME.colors.primary,
+                    fontWeight: "600",
+                    fontSize: 14,
+                  }}
+                >
+                  View All Insights
+                </Text>
+                <MaterialCommunityIcons
+                  name="arrow-right"
+                  size={18}
+                  color={THEME.colors.primary}
+                />
+              </View>
+            </Pressable>
+          </Animated.View>
 
           {/* Quick Navigation */}
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View
+          <Animated.Text
+            entering={FadeInDown.delay(300).springify()}
+            style={styles.sectionTitle}
+          >
+            Quick Actions
+          </Animated.Text>
+          <Animated.View
+            entering={FadeInDown.delay(350).springify()}
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
@@ -353,28 +622,43 @@ export default function DashboardScreen() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
 
       {/* Floating Action Button */}
-      <FAB
-        icon="plus"
-        onPress={() => router.push("/(dashboard)/employees/add")}
-        options={[
-          {
-            icon: "account-plus",
-            label: "Add Employee",
-            onPress: () => router.push("/(dashboard)/employees/add"),
-          },
-          {
-            icon: "upload",
-            label: "Import",
-            onPress: () => router.push("/(dashboard)/employees/bulk-import"),
-          },
-        ]}
-        position="bottom-right"
-      />
+      {can(Action.ADD_EMPLOYEE) && (
+        <FAB
+          icon="plus"
+          onPress={() => router.push("/(dashboard)/employees/add")}
+          options={[
+            {
+              icon: "account-plus",
+              label: "Add Employee",
+              onPress: () => router.push("/(dashboard)/employees/add"),
+            },
+            {
+              icon: "upload",
+              label: "Import",
+              onPress: () => router.push("/(dashboard)/employees/bulk-import"),
+            },
+          ]}
+          position="bottom-right"
+        />
+      )}
+
+      {/* Notifications Modal */}
+      <Modal
+        visible={showNotifications}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowNotifications(false)}
+      >
+        <NotificationCenter
+          onClose={() => setShowNotifications(false)}
+          userId={user?.$id}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }

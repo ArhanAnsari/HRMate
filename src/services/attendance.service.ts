@@ -1,11 +1,12 @@
 import { attendanceQueries, getCurrentUserCompanyId } from "./appwriteClient";
 
 export interface AttendanceRecord {
+  employeeId?: string;
   email: any;
   hoursWorked: any;
   id: string;
   name: string;
-  status: "present" | "absent" | "late";
+  status: "present" | "absent" | "late" | "on_leave";
   checkIn: string;
   checkOut: string;
   duration: string;

@@ -1,0 +1,13 @@
+{
+  "name": "ai-handler",
+  "version": "1.0.0",
+  "description": "Appwrite function to handle AI requests via Gemini",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.0"
+  }
+}

@@ -127,11 +127,7 @@ export const leavesService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        [
-          Query.equal("company_id", companyId),
-          Query.equal("status", "pending"),
-          Query.orderDesc("$createdAt"),
-        ],
+        [Query.equal("company_id", companyId), Query.orderDesc("$createdAt")],
       );
 
       return response.documents.map(mapDocToLeaveRequest);
@@ -200,6 +196,28 @@ export const leavesService = {
   },
 
   /**
+   * Cancel leave request
+   */
+  async cancelLeave(leaveId: string): Promise<LeaveRequest> {
+    try {
+      const response = await databases.updateDocument(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.LEAVES,
+        leaveId,
+        {
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        },
+      );
+
+      return mapDocToLeaveRequest(response);
+    } catch (error) {
+      console.error("Failed to cancel leave:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get leave statistics for a company
    */
   async getLeaveStats(
@@ -225,4 +243,3 @@ export const leavesService = {
     }
   },
 };
-

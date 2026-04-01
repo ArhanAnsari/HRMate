@@ -8,14 +8,14 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -196,6 +196,8 @@ export default function BulkImportScreen() {
                 position: employee.position,
                 department: employee.department,
                 joiningDate: employee.joiningDate,
+                employmentType: employee.employmentType,
+                baseSalary: employee.baseSalary,
               },
             );
 

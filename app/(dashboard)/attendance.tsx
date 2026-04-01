@@ -5,6 +5,8 @@
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
+import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
+import { appwriteClient } from "@/src/services/appwrite";
 import {
   AttendanceRecord,
   AttendanceStats,
@@ -15,15 +17,18 @@ import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   RefreshControl,
   SafeAreaView,
   Text,
   TextStyle,
+  TouchableOpacity,
   View,
   ViewStyle,
   useColorScheme,
 } from "react-native";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 
 export default function AttendanceScreen() {
   const colorScheme = useColorScheme();
@@ -36,24 +41,7 @@ export default function AttendanceScreen() {
   );
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    if (user?.companyId) {
-      loadAttendanceData();
-    }
-  }, [user?.companyId]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredRecords(records);
-    } else {
-      setFilteredRecords(
-        records.filter((r) =>
-          r.name.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      );
-    }
-  }, [searchQuery, records]);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
 
   const loadAttendanceData = useCallback(async () => {
     if (!user?.companyId) return;
@@ -71,6 +59,66 @@ export default function AttendanceScreen() {
       setLoading(false);
     }
   }, [user?.companyId]);
+
+  // Determine current user attendance status
+  const myRecord = records.find((r) => r.employeeId === user?.$id);
+
+  const handleCheckInOut = async () => {
+    if (!user?.$id || !user?.companyId) return;
+    setIsCheckingIn(true);
+    try {
+      if (!myRecord) {
+        // Not checked in yet today
+        await attendanceService.checkIn(user.$id, user.companyId);
+        Alert.alert("Success", "Checked in successfully!");
+      } else if (!myRecord.checkOut || myRecord.checkOut === "-") {
+        // Checked in, but not checked out yet
+        await attendanceService.checkOut(user.$id);
+        Alert.alert("Success", "Checked out successfully!");
+      } else {
+        // Already checked out
+        Alert.alert("Info", "You have already completed your shift today.");
+      }
+    } catch (error: any) {
+      Alert.alert("Action Failed", error.message || "An error occurred.");
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
+
+  useEffect(() => {
+    let unsubscribe: () => void;
+
+    if (user?.companyId) {
+      loadAttendanceData();
+
+      // Realtime subscription to the attendance collection
+      const channel = `databases.${APPWRITE_CONFIG.DATABASE_ID}.collections.${DB_IDS.ATTENDANCE}.documents`;
+      unsubscribe = appwriteClient.subscribe(channel, (response) => {
+        const payload = response.payload as any;
+        if (payload && payload.company_id === user.companyId) {
+          // Refresh entirely or we could manually patch the `records` and `stats`
+          loadAttendanceData();
+        }
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [loadAttendanceData, user?.companyId]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredRecords(records);
+    } else {
+      setFilteredRecords(
+        records.filter((r) =>
+          r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+      );
+    }
+  }, [searchQuery, records]);
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -172,9 +220,13 @@ export default function AttendanceScreen() {
     ];
 
     return (
-      <View style={metricsGridStyle}>
+      <Animated.View entering={FadeInDown.springify()} style={metricsGridStyle}>
         {metrics.map((metric, index) => (
-          <View key={index} style={metricItemStyle}>
+          <Animated.View
+            key={index}
+            entering={ZoomIn.delay(index * 100).springify()}
+            style={metricItemStyle}
+          >
             <MetricCard
               label={metric.label}
               value={metric.value}
@@ -187,13 +239,19 @@ export default function AttendanceScreen() {
               }
               icon={metric.icon}
             />
-          </View>
+          </Animated.View>
         ))}
-      </View>
+      </Animated.View>
     );
   };
 
-  const renderAttendanceRecord = ({ item }: { item: AttendanceRecord }) => {
+  const renderAttendanceRecord = ({
+    item,
+    index,
+  }: {
+    item: AttendanceRecord;
+    index: number;
+  }) => {
     const statusColors: Record<string, string> = {
       present: THEME.colors.success,
       absent: THEME.colors.danger,
@@ -201,122 +259,124 @@ export default function AttendanceScreen() {
     };
 
     return (
-      <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-                marginBottom: THEME.spacing.xs,
-              }}
-            >
-              {item.name}
-            </Text>
-            <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: isDark
-                      ? THEME.dark.text.tertiary
-                      : THEME.light.text.tertiary,
-                    marginBottom: THEME.spacing.xs,
-                  }}
-                >
-                  Check In
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: isDark
-                      ? THEME.dark.text.primary
-                      : THEME.light.text.primary,
-                  }}
-                >
-                  {item.checkIn}
-                </Text>
-              </View>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: isDark
-                      ? THEME.dark.text.tertiary
-                      : THEME.light.text.tertiary,
-                    marginBottom: THEME.spacing.xs,
-                  }}
-                >
-                  Check Out
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: isDark
-                      ? THEME.dark.text.primary
-                      : THEME.light.text.primary,
-                  }}
-                >
-                  {item.checkOut}
-                </Text>
-              </View>
-              <View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: isDark
-                      ? THEME.dark.text.tertiary
-                      : THEME.light.text.tertiary,
-                    marginBottom: THEME.spacing.xs,
-                  }}
-                >
-                  Duration
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: isDark
-                      ? THEME.dark.text.primary
-                      : THEME.light.text.primary,
-                  }}
-                >
-                  {item.duration}
-                </Text>
-              </View>
-            </View>
-          </View>
+      <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+        <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
           <View
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              backgroundColor: statusColors[item.status],
-              justifyContent: "center",
+              flexDirection: "row",
+              justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 14, color: "white", fontWeight: "600" }}>
-              {item.status === "present"
-                ? "✓"
-                : item.status === "late"
-                  ? "!"
-                  : "✕"}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: isDark
+                    ? THEME.dark.text.primary
+                    : THEME.light.text.primary,
+                  marginBottom: THEME.spacing.xs,
+                }}
+              >
+                {item.name}
+              </Text>
+              <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark
+                        ? THEME.dark.text.tertiary
+                        : THEME.light.text.tertiary,
+                      marginBottom: THEME.spacing.xs,
+                    }}
+                  >
+                    Check In
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: isDark
+                        ? THEME.dark.text.primary
+                        : THEME.light.text.primary,
+                    }}
+                  >
+                    {item.checkIn}
+                  </Text>
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark
+                        ? THEME.dark.text.tertiary
+                        : THEME.light.text.tertiary,
+                      marginBottom: THEME.spacing.xs,
+                    }}
+                  >
+                    Check Out
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: isDark
+                        ? THEME.dark.text.primary
+                        : THEME.light.text.primary,
+                    }}
+                  >
+                    {item.checkOut}
+                  </Text>
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark
+                        ? THEME.dark.text.tertiary
+                        : THEME.light.text.tertiary,
+                      marginBottom: THEME.spacing.xs,
+                    }}
+                  >
+                    Duration
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: isDark
+                        ? THEME.dark.text.primary
+                        : THEME.light.text.primary,
+                    }}
+                  >
+                    {item.duration}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: statusColors[item.status],
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 14, color: "white", fontWeight: "600" }}>
+                {item.status === "present"
+                  ? "✓"
+                  : item.status === "late"
+                    ? "!"
+                    : "✕"}
+              </Text>
+            </View>
           </View>
-        </View>
-      </PremiumCard>
+        </PremiumCard>
+      </Animated.View>
     );
   };
 
@@ -331,10 +391,48 @@ export default function AttendanceScreen() {
           <RefreshControl refreshing={loading} onRefresh={loadAttendanceData} />
         }
         ListHeaderComponent={() => (
-          <View>
-            <View style={headerStyle}>
-              <Text style={titleStyle}>Attendance</Text>
-              <Text style={subtitleStyle}>Today's attendance overview</Text>
+          <Animated.View entering={FadeInDown.delay(50).springify()}>
+            <View
+              style={[
+                headerStyle,
+                {
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                },
+              ]}
+            >
+              <View>
+                <Text style={titleStyle}>Attendance</Text>
+                <Text style={subtitleStyle}>
+                  Today&apos;s attendance overview
+                </Text>
+              </View>
+
+              {user?.role !== "admin" && ( // Assuming admins might not check in, or you just show it to everyone
+                <TouchableOpacity
+                  onPress={handleCheckInOut}
+                  disabled={isCheckingIn}
+                  style={{
+                    backgroundColor:
+                      myRecord &&
+                      (!myRecord.checkOut || myRecord.checkOut === "-")
+                        ? THEME.colors.danger
+                        : THEME.colors.primary,
+                    paddingHorizontal: THEME.spacing.md,
+                    paddingVertical: THEME.spacing.sm,
+                    borderRadius: THEME.borderRadius.md,
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {!myRecord
+                      ? "Check In"
+                      : !myRecord.checkOut || myRecord.checkOut === "-"
+                        ? "Check Out"
+                        : "Checked Out"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {renderMetricsGrid()}
@@ -346,7 +444,7 @@ export default function AttendanceScreen() {
               onChangeText={setSearchQuery}
               style={{ marginBottom: THEME.spacing.md }}
             />
-          </View>
+          </Animated.View>
         )}
         scrollEnabled={true}
       />

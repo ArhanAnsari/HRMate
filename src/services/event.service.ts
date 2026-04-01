@@ -18,7 +18,7 @@
  */
 
 import { notificationPreferencesService } from "@/src/services/notification-preferences.service";
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { aiService } from "./ai.service";
 import { databases } from "./appwrite";
@@ -169,7 +169,7 @@ export const eventService = {
       const notificationDoc = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.NOTIFICATIONS,
-        "unique()",
+        ID.unique(),
         {
           user_id: userId,
           company_id: companyId,
@@ -270,7 +270,7 @@ export const eventService = {
       await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.NOTIFICATION_LOGS,
-        "unique()",
+        ID.unique(),
         {
           notification_id: notificationId,
           user_id: userId,

@@ -1,7 +1,46 @@
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { LeaveCreateInput, LeaveRequest } from "../types";
 import { databases } from "./appwrite";
+
+/** Map a raw Appwrite leaves document to the camelCase LeaveRequest interface */
+const mapDocToLeaveRequest = (doc: any): LeaveRequest => ({
+  $id: doc.$id,
+  employeeId: doc.employee_id || "",
+  companyId: doc.company_id || "",
+  leaveType: doc.leave_type,
+  startDate: doc.start_date ? doc.start_date.split("T")[0] : "",
+  endDate: doc.end_date ? doc.end_date.split("T")[0] : "",
+  numberOfDays: doc.number_of_days || 0,
+  reason: doc.reason || "",
+  status: doc.status || "pending",
+  approvedBy: doc.approved_by,
+  approvalDate: doc.approval_date,
+  comments: doc.comments,
+  createdAt: doc.created_at || doc.$createdAt || new Date().toISOString(),
+  updatedAt: doc.updated_at || doc.$updatedAt || new Date().toISOString(),
+});
+
+/** Map camelCase LeaveCreateInput to snake_case Appwrite document fields */
+const mapInputToLeaveDoc = (
+  companyId: string,
+  employeeId: string,
+  data: LeaveCreateInput,
+) => {
+  const now = new Date().toISOString();
+  return {
+    company_id: companyId,
+    employee_id: employeeId,
+    leave_type: data.leaveType,
+    start_date: new Date(data.startDate).toISOString(),
+    end_date: new Date(data.endDate).toISOString(),
+    number_of_days: data.numberOfDays,
+    reason: data.reason,
+    status: "pending",
+    created_at: now,
+    updated_at: now,
+  };
+};
 
 export const leavesService = {
   /**
@@ -16,18 +55,11 @@ export const leavesService = {
       const response = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        "unique()",
-        {
-          company_id: companyId,
-          employee_id: employeeId,
-          ...data,
-          status: "pending",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
+        ID.unique(),
+        mapInputToLeaveDoc(companyId, employeeId, data),
       );
 
-      return response as unknown as LeaveRequest;
+      return mapDocToLeaveRequest(response);
     } catch (error) {
       console.error("Failed to apply leave:", error);
       throw error;
@@ -52,7 +84,7 @@ export const leavesService = {
         ],
       );
 
-      return response.documents as unknown as LeaveRequest[];
+      return response.documents.map(mapDocToLeaveRequest);
     } catch (error) {
       console.error("Failed to fetch leaves:", error);
       throw error;
@@ -102,7 +134,7 @@ export const leavesService = {
         ],
       );
 
-      return response.documents as unknown as LeaveRequest[];
+      return response.documents.map(mapDocToLeaveRequest);
     } catch (error) {
       console.error("Failed to fetch pending leaves:", error);
       throw error;
@@ -126,12 +158,12 @@ export const leavesService = {
           status: "approved",
           approved_by: approverUserId,
           approval_date: new Date().toISOString(),
-          approval_notes: notes,
+          comments: notes,
           updated_at: new Date().toISOString(),
         },
       );
 
-      return response as unknown as LeaveRequest;
+      return mapDocToLeaveRequest(response);
     } catch (error) {
       console.error("Failed to approve leave:", error);
       throw error;
@@ -155,12 +187,12 @@ export const leavesService = {
           status: "rejected",
           approved_by: approverUserId,
           approval_date: new Date().toISOString(),
-          approval_notes: reason,
+          comments: reason,
           updated_at: new Date().toISOString(),
         },
       );
 
-      return response as unknown as LeaveRequest;
+      return mapDocToLeaveRequest(response);
     } catch (error) {
       console.error("Failed to reject leave:", error);
       throw error;
@@ -168,7 +200,7 @@ export const leavesService = {
   },
 
   /**
-   * Get leave statistics
+   * Get leave statistics for a company
    */
   async getLeaveStats(
     companyId: string,
@@ -180,12 +212,12 @@ export const leavesService = {
         [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
-      const leaves = response.documents as unknown as LeaveRequest[];
+      const leaves = response.documents;
 
       return {
-        pending: leaves.filter((l) => l.status === "pending").length,
-        approved: leaves.filter((l) => l.status === "approved").length,
-        rejected: leaves.filter((l) => l.status === "rejected").length,
+        pending: leaves.filter((l: any) => l.status === "pending").length,
+        approved: leaves.filter((l: any) => l.status === "approved").length,
+        rejected: leaves.filter((l: any) => l.status === "rejected").length,
       };
     } catch (error) {
       console.error("Failed to get leave stats:", error);
@@ -193,3 +225,4 @@ export const leavesService = {
     }
   },
 };
+

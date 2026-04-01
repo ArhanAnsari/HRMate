@@ -573,7 +573,7 @@ export const leaveQueries = {
       );
 
       const usedDays = leaves.documents.reduce(
-        (sum: number, l: any) => sum + (l.days_count || 0),
+        (sum: number, l: any) => sum + (l.number_of_days || 0),
         0,
       );
 
@@ -600,7 +600,7 @@ export const leaveQueries = {
         DB_IDS.LEAVES,
         [
           Query.equal("employee_id", employeeId),
-          Query.orderDesc("from_date"),
+          Query.orderDesc("$createdAt"),
           Query.limit(10),
         ],
       );
@@ -608,9 +608,9 @@ export const leaveQueries = {
       return leaves.documents.map((l: any) => ({
         id: l.$id,
         type: l.leave_type,
-        startDate: l.from_date,
-        endDate: l.to_date,
-        days: l.days_count,
+        startDate: l.start_date ? l.start_date.split("T")[0] : "",
+        endDate: l.end_date ? l.end_date.split("T")[0] : "",
+        days: l.number_of_days,
         status: l.status,
       }));
     } catch (error) {

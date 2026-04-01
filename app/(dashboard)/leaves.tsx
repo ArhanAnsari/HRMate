@@ -8,18 +8,25 @@ import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { leavesService } from "@/src/services/leaves.service";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
+import { LeaveType } from "@/src/types";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   RefreshControl,
   Text,
+  TextInput,
   TextStyle,
+  TouchableOpacity,
   View,
   ViewStyle,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const LEAVE_TYPES: LeaveType[] = ["sick", "casual", "paid", "unpaid"];
 
 export default function LeavesScreen() {
   const colorScheme = useColorScheme();
@@ -28,6 +35,14 @@ export default function LeavesScreen() {
   const [leaveStats, setLeaveStats] = useState<any>(null);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Apply Leave modal state
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [leaveType, setLeaveType] = useState<LeaveType>("casual");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (user?.companyId && user?.$id) {
@@ -45,7 +60,6 @@ export default function LeavesScreen() {
         leavesService.getEmployeeLeaves(user.companyId, user.$id),
       ]);
 
-      // Map to expected format
       setLeaveStats({
         totalDays: stats.total,
         usedDays: stats.used,
@@ -55,7 +69,6 @@ export default function LeavesScreen() {
       setLeaveRequests(requests);
     } catch (error) {
       console.error("Failed to load leave data:", error);
-      // Set default empty state on error
       setLeaveStats({
         totalDays: 20,
         usedDays: 0,
@@ -64,6 +77,60 @@ export default function LeavesScreen() {
       setLeaveRequests([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApplyLeave = async () => {
+    if (!startDate || !endDate || !reason.trim()) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      Alert.alert("Error", "Please enter valid dates in YYYY-MM-DD format.");
+      return;
+    }
+
+    if (end < start) {
+      Alert.alert("Error", "End date cannot be before start date.");
+      return;
+    }
+
+    const diffMs = end.getTime() - start.getTime();
+    const numberOfDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+    if (!user?.companyId || !user?.$id) {
+      Alert.alert("Error", "User session not found. Please log in again.");
+      return;
+    }
+
+    setApplyLoading(true);
+    try {
+      await leavesService.applyLeave(user.companyId, user.$id, {
+        leaveType,
+        startDate,
+        endDate,
+        numberOfDays,
+        reason: reason.trim(),
+      });
+
+      setShowApplyModal(false);
+      setStartDate("");
+      setEndDate("");
+      setReason("");
+      setLeaveType("casual");
+      Alert.alert("Success", "Leave application submitted successfully.");
+      loadLeaveData();
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error?.message || "Failed to submit leave application.",
+      );
+    } finally {
+      setApplyLoading(false);
     }
   };
 
@@ -84,6 +151,20 @@ export default function LeavesScreen() {
     fontWeight: "700",
     color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
     marginBottom: THEME.spacing.sm,
+  };
+
+  const inputStyle: TextStyle = {
+    borderWidth: 1,
+    borderColor: isDark ? THEME.dark.border : THEME.light.border,
+    borderRadius: THEME.borderRadius.md,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+    backgroundColor: isDark
+      ? THEME.dark.background.tertiary
+      : THEME.light.background.tertiary,
+    marginBottom: THEME.spacing.md,
+    fontSize: 14,
   };
 
   const renderLeaveRequest = ({ item }: { item: any }) => (
@@ -280,32 +361,226 @@ export default function LeavesScreen() {
               </View>
             )}
 
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-                marginBottom: THEME.spacing.md,
-              }}
-            >
-              My Requests
-            </Text>
+            {leaveRequests.length === 0 && !loading && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: isDark
+                    ? THEME.dark.text.tertiary
+                    : THEME.light.text.tertiary,
+                  textAlign: "center",
+                  marginVertical: THEME.spacing.xl,
+                }}
+              >
+                No leave requests yet. Tap + to apply.
+              </Text>
+            )}
+
+            {leaveRequests.length > 0 && (
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: isDark
+                    ? THEME.dark.text.primary
+                    : THEME.light.text.primary,
+                  marginBottom: THEME.spacing.md,
+                }}
+              >
+                My Requests
+              </Text>
+            )}
           </View>
         )}
       />
 
       <FAB
         icon="plus"
-        onPress={() => {
-          Alert.alert(
-            "Apply for Leave",
-            "Leave application form will open here.",
-          );
-        }}
+        onPress={() => setShowApplyModal(true)}
         position="bottom-right"
       />
+
+      {/* Apply for Leave Modal */}
+      <Modal
+        visible={showApplyModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowApplyModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark
+                ? THEME.dark.background.main
+                : THEME.light.background.main,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: THEME.spacing.xl,
+              maxHeight: "85%",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                marginBottom: THEME.spacing.lg,
+              }}
+            >
+              Apply for Leave
+            </Text>
+
+            {/* Leave Type Selector */}
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                marginBottom: THEME.spacing.sm,
+              }}
+            >
+              Leave Type
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: THEME.spacing.sm,
+                marginBottom: THEME.spacing.md,
+              }}
+            >
+              {LEAVE_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setLeaveType(type)}
+                  style={{
+                    paddingHorizontal: THEME.spacing.md,
+                    paddingVertical: THEME.spacing.sm,
+                    borderRadius: THEME.borderRadius.sm,
+                    backgroundColor:
+                      leaveType === type
+                        ? THEME.colors.primary
+                        : isDark
+                          ? THEME.dark.background.tertiary
+                          : THEME.light.background.tertiary,
+                    borderWidth: 1,
+                    borderColor:
+                      leaveType === type
+                        ? THEME.colors.primary
+                        : isDark
+                          ? THEME.dark.border
+                          : THEME.light.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "500",
+                      color:
+                        leaveType === type
+                          ? "#fff"
+                          : isDark
+                            ? THEME.dark.text.primary
+                            : THEME.light.text.primary,
+                    }}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              style={inputStyle}
+              placeholder="Start Date (YYYY-MM-DD)"
+              placeholderTextColor={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+              value={startDate}
+              onChangeText={setStartDate}
+              editable={!applyLoading}
+            />
+            <TextInput
+              style={inputStyle}
+              placeholder="End Date (YYYY-MM-DD)"
+              placeholderTextColor={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+              value={endDate}
+              onChangeText={setEndDate}
+              editable={!applyLoading}
+            />
+            <TextInput
+              style={[inputStyle, { height: 80, textAlignVertical: "top" }]}
+              placeholder="Reason for leave"
+              placeholderTextColor={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+              value={reason}
+              onChangeText={setReason}
+              multiline
+              numberOfLines={3}
+              editable={!applyLoading}
+            />
+
+            <View style={{ flexDirection: "row", gap: THEME.spacing.md }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowApplyModal(false);
+                  setStartDate("");
+                  setEndDate("");
+                  setReason("");
+                  setLeaveType("casual");
+                }}
+                disabled={applyLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleApplyLeave}
+                disabled={applyLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: THEME.colors.primary,
+                }}
+              >
+                {applyLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    Submit
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

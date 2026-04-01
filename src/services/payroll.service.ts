@@ -1,4 +1,4 @@
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { Payslip, SalaryStructure } from "../types";
 import { databases } from "./appwrite";
@@ -33,7 +33,7 @@ export const payrollService = {
       const response = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYROLL_STRUCTURE,
-        "unique()",
+        ID.unique(),
         {
           company_id: companyId,
           ...data,
@@ -131,7 +131,7 @@ export const payrollService = {
       const response = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYSLIPS,
-        "unique()",
+        ID.unique(),
         {
           company_id: companyId,
           employee_id: employeeId,

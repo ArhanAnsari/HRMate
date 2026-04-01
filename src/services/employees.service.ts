@@ -1,7 +1,60 @@
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { Employee, EmployeeCreateInput, EmployeeUpdateInput } from "../types";
 import { databases } from "./appwrite";
+
+/** Map a raw Appwrite document to the camelCase Employee interface */
+const mapDocToEmployee = (doc: any): Employee => ({
+  $id: doc.$id,
+  companyId: doc.company_id || "",
+  firstName: doc.first_name || "",
+  lastName: doc.last_name || "",
+  email: doc.email || "",
+  phone: doc.phone || "",
+  position: doc.position || "",
+  department: doc.department || "",
+  // Normalize to date-only (YYYY-MM-DD) for consistent UI display
+  joiningDate:
+    typeof doc.joining_date === "string"
+      ? doc.joining_date.split("T")[0]
+      : "",
+  dateOfBirth:
+    typeof doc.date_of_birth === "string"
+      ? doc.date_of_birth.split("T")[0]
+      : undefined,
+  status: doc.status || "active",
+  employmentType: doc.employment_type || "full_time",
+  baseSalary: typeof doc.base_salary === "number" ? doc.base_salary : doc.base_salary !== undefined ? parseFloat(doc.base_salary) || undefined : undefined,
+  avatar: doc.profile_image,
+  address: doc.address,
+  createdAt: doc.created_at || doc.$createdAt || new Date().toISOString(),
+  updatedAt: doc.updated_at || doc.$updatedAt || new Date().toISOString(),
+});
+
+/** Map camelCase EmployeeCreateInput to snake_case Appwrite document fields */
+const mapInputToDoc = (data: EmployeeCreateInput, companyId: string) => {
+  const now = new Date().toISOString();
+  return {
+    company_id: companyId,
+    first_name: data.firstName,
+    last_name: data.lastName,
+    email: data.email,
+    phone: data.phone,
+    position: data.position,
+    department: data.department,
+    joining_date: data.joiningDate
+      ? new Date(data.joiningDate).toISOString()
+      : now,
+    ...(data.dateOfBirth
+      ? { date_of_birth: new Date(data.dateOfBirth).toISOString() }
+      : {}),
+    status: "active",
+    employment_type: data.employmentType || "full_time",
+    ...(data.baseSalary !== undefined ? { base_salary: data.baseSalary } : {}),
+    created_at: now,
+    updated_at: now,
+  };
+};
 
 export const employeeService = {
   /**
@@ -18,7 +71,7 @@ export const employeeService = {
         DB_IDS.EMPLOYEES,
         [Query.equal("company_id", companyId), Query.limit(limit), Query.offset(offset)],
       );
-      return response.documents as unknown as Employee[];
+      return response.documents.map(mapDocToEmployee);
     } catch (error) {
       console.error("Failed to fetch employees:", error);
       throw error;
@@ -35,7 +88,7 @@ export const employeeService = {
         DB_IDS.EMPLOYEES,
         employeeId,
       );
-      return response as unknown as Employee;
+      return mapDocToEmployee(response);
     } catch (error) {
       console.error("Failed to fetch employee:", error);
       throw error;
@@ -53,16 +106,10 @@ export const employeeService = {
       const response = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
-        "unique()",
-        {
-          ...data,
-          company_id: companyId,
-          status: "active",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
+        ID.unique(),
+        mapInputToDoc(data, companyId),
       );
-      return response as unknown as Employee;
+      return mapDocToEmployee(response);
     } catch (error) {
       console.error("Failed to create employee:", error);
       throw error;
@@ -77,16 +124,28 @@ export const employeeService = {
     data: EmployeeUpdateInput,
   ): Promise<Employee> {
     try {
+      const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (data.firstName !== undefined) updateData.first_name = data.firstName;
+      if (data.lastName !== undefined) updateData.last_name = data.lastName;
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.phone !== undefined) updateData.phone = data.phone;
+      if (data.position !== undefined) updateData.position = data.position;
+      if (data.department !== undefined) updateData.department = data.department;
+      if (data.joiningDate !== undefined)
+        updateData.joining_date = new Date(data.joiningDate).toISOString();
+      if (data.dateOfBirth !== undefined)
+        updateData.date_of_birth = new Date(data.dateOfBirth).toISOString();
+      if (data.employmentType !== undefined)
+        updateData.employment_type = data.employmentType;
+      if (data.baseSalary !== undefined) updateData.base_salary = data.baseSalary;
+
       const response = await databases.updateDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
         employeeId,
-        {
-          ...data,
-          updated_at: new Date().toISOString(),
-        },
+        updateData,
       );
-      return response as unknown as Employee;
+      return mapDocToEmployee(response);
     } catch (error) {
       console.error("Failed to update employee:", error);
       throw error;
@@ -120,7 +179,7 @@ export const employeeService = {
         [Query.equal("company_id", companyId), Query.limit(100)],
       );
 
-      const employees = response.documents as unknown as Employee[];
+      const employees = response.documents.map(mapDocToEmployee);
       const lowerQuery = query.toLowerCase();
 
       return employees.filter(
@@ -157,7 +216,7 @@ export const employeeService = {
         queryFilters,
       );
 
-      return response.documents as unknown as Employee[];
+      return response.documents.map(mapDocToEmployee);
     } catch (error) {
       console.error("Failed to filter employees:", error);
       throw error;
@@ -202,7 +261,7 @@ export const employeeService = {
         [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
-      const employees = response.documents as unknown as Employee[];
+      const employees = response.documents.map(mapDocToEmployee);
       const stats = {
         active: employees.filter((e) => e.status === "active").length,
         inactive: employees.filter((e) => e.status === "inactive").length,

@@ -54,6 +54,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     joiningDate:
       initialEmployee?.joiningDate || new Date().toISOString().split("T")[0],
     dateOfBirth: initialEmployee?.dateOfBirth || "",
+    employmentType:
+      initialEmployee?.employmentType ?? "full_time",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -275,8 +277,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
 
         <FormSelect
           label="Employment Type"
-          value={form.salaryStructure?.basic ? "full_time" : "full_time"}
-          onChangeText={() => {}}
+          value={form.employmentType || "full_time"}
+          onChangeText={(text: string) =>
+            setForm({ ...form, employmentType: text })
+          }
           options={EMPLOYMENT_TYPES}
         />
 

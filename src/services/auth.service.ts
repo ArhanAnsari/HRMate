@@ -1,4 +1,4 @@
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { LoginCredentials, SignupData, User } from "../types";
 import {
@@ -39,87 +39,63 @@ export const authService = {
       await clearSessionIfExists();
 
       // Create auth account
-      await account.create("unique()", data.email, data.password, data.name);
+      await account.create(ID.unique(), data.email, data.password, data.name);
 
       // Create session for immediate authenticated flow
       await account.createEmailPasswordSession(data.email, data.password);
 
       const authUser = await account.get();
 
-      // Create company document
-      let companyId = "";
+      // Create company document — fail signup if this fails (company_id is required)
+      const now = new Date().toISOString();
+      let companyId: string;
       try {
         const company = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.COMPANIES,
-          "unique()",
+          ID.unique(),
           {
             name: data.companyName,
-            email: data.email,
-            createdAt: new Date().toISOString(),
+            industry: "Other",
+            subscription_tier: "free",
+            created_by: authUser.$id,
+            created_at: now,
+            updated_at: now,
           },
         );
         companyId = company.$id;
       } catch {
-        // Best effort for alternate snake_case schemas
+        // Clean up: delete the auth account so user can retry signup
         try {
-          const company = await databases.createDocument(
-            APPWRITE_CONFIG.DATABASE_ID,
-            DB_IDS.COMPANIES,
-            "unique()",
-            {
-              name: data.companyName,
-              email: data.email,
-              subscription_tier: "free",
-              is_active: true,
-              created_by: authUser.$id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          );
-          companyId = company.$id;
+          await account.deleteSession("current");
         } catch {
-          companyId = "";
+          // Ignore cleanup errors
         }
+        throw new Error(
+          "Failed to create company. Please try again.",
+        );
       }
 
-      // Create user document
+      // Create user document using the auth user's $id as the document ID
+      // so lookups by document ID match the auth user ID
       try {
         const user = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.USERS,
-          "unique()",
+          authUser.$id,
           {
-            userId: authUser.$id,
             email: data.email,
-            name: data.name,
+            full_name: data.name,
             role: "admin",
-            companyId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            company_id: companyId,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
           },
         );
         return mapToUser(user, authUser);
       } catch {
-        try {
-          const user = await databases.createDocument(
-            APPWRITE_CONFIG.DATABASE_ID,
-            DB_IDS.USERS,
-            "unique()",
-            {
-              email: data.email,
-              full_name: data.name,
-              role: "admin",
-              company_id: companyId,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          );
-          return mapToUser(user, authUser);
-        } catch {
-          return mapToUser(null, authUser);
-        }
+        return mapToUser(null, authUser);
       }
     } catch (error) {
       throw new Error(handleAppwriteError(error));

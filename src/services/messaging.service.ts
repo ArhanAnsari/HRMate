@@ -12,7 +12,7 @@
  * - Retry mechanism for failed sends
  */
 
-import { Query } from "appwrite";
+import { ID, Query } from "appwrite";
 import * as Notifications from "expo-notifications";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";
@@ -144,28 +144,24 @@ export const messagingService = {
       console.log(`📧 Sending email notification to user: ${userId}`);
       console.log(`   Subject: ${subject}`);
 
-      // Get user's email from database
-      const userDocs = await databases.listDocuments(
-        APPWRITE_CONFIG.DATABASE_ID,
-        DB_IDS.USERS,
-        [Query.equal("userId", userId)],
-      );
+      // Get user's email from database by document ID (user docs use authUser.$id as document ID)
+      let userEmail: string | undefined;
+      try {
+        const userDoc = await databases.getDocument(
+          APPWRITE_CONFIG.DATABASE_ID,
+          DB_IDS.USERS,
+          userId,
+        );
+        userEmail = userDoc.email;
+      } catch {
+        // Direct lookup failed; user not found
+      }
 
-      if (userDocs.documents.length === 0) {
+      if (!userEmail) {
         console.warn(`⚠️ User not found: ${userId}`);
         return {
           success: false,
           error: "User not found",
-        };
-      }
-
-      const userEmail = userDocs.documents[0].email;
-
-      if (!userEmail) {
-        console.warn(`⚠️ User has no email address: ${userId}`);
-        return {
-          success: false,
-          error: "User has no email",
         };
       }
 
@@ -216,28 +212,24 @@ export const messagingService = {
       console.log(`📱 Sending SMS notification to user: ${userId}`);
       console.log(`   Message: ${message}`);
 
-      // Get user's phone from database
-      const userDocs = await databases.listDocuments(
-        APPWRITE_CONFIG.DATABASE_ID,
-        DB_IDS.USERS,
-        [Query.equal("userId", userId)],
-      );
-
-      if (userDocs.documents.length === 0) {
-        console.warn(`⚠️ User not found: ${userId}`);
-        return {
-          success: false,
-          error: "User not found",
-        };
+      // Get user's phone from database by document ID (user docs use authUser.$id as document ID)
+      let userPhone: string | undefined;
+      try {
+        const userDoc = await databases.getDocument(
+          APPWRITE_CONFIG.DATABASE_ID,
+          DB_IDS.USERS,
+          userId,
+        );
+        userPhone = userDoc.phone;
+      } catch {
+        // Direct lookup failed; user not found
       }
 
-      const userPhone = userDocs.documents[0].phone;
-
       if (!userPhone) {
-        console.warn(`⚠️ User has no phone number: ${userId}`);
+        console.warn(`⚠️ User not found or has no phone: ${userId}`);
         return {
           success: false,
-          error: "User has no phone",
+          error: "User not found or has no phone",
         };
       }
 
@@ -316,7 +308,7 @@ export const messagingService = {
       const result = await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.DEVICE_TOKENS,
-        "unique()",
+        ID.unique(),
         {
           user_id: userId,
           device_token: deviceToken,

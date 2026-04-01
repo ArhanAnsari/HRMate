@@ -28,6 +28,8 @@ export interface Employee {
   department: string;
   joiningDate: string;
   status: EmploymentStatus;
+  employmentType?: string;
+  baseSalary?: number;
   salaryStructure?: SalaryStructure;
   documents?: string[]; // Document IDs
   avatar?: string;
@@ -45,6 +47,8 @@ export interface EmployeeCreateInput {
   department: string;
   joiningDate: string;
   dateOfBirth?: string;
+  employmentType?: string;
+  baseSalary?: number;
   salaryStructure?: SalaryStructure;
 }
 

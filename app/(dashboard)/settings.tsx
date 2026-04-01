@@ -323,7 +323,7 @@ export default function SettingsScreen() {
                   : THEME.light.text.secondary,
               }}
             >
-              Version {Constants.expoConfig?.version ?? "1.0.2"} • Premium Edition
+              Version {Constants.expoConfig?.version} • Premium Edition
             </Text>
             <Text
               style={{

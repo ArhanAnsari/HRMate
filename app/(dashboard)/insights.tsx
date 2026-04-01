@@ -134,8 +134,8 @@ export default function InsightsScreen() {
           highTurnoverRate:
             totalEmployees > 0
               ? Math.round(
-                  ((employees.filter((e: any) => e.status === "inactive")
-                    .length || 0) /
+                  (employees.filter((e: any) => e.status === "inactive")
+                    .length /
                     totalEmployees) *
                     100,
                 )
@@ -291,7 +291,7 @@ export default function InsightsScreen() {
               }}
             >
               {aiInsights ||
-                "No AI insights available. Configure Gemini API key in your .env file to enable AI-powered analysis."}
+                "No AI insights available. Configure EXPO_PUBLIC_GEMINI_API_KEY to enable AI-powered analysis."}
             </Text>
           </PremiumCard>
         )}

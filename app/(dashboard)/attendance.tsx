@@ -5,6 +5,7 @@
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { SearchBar } from "@/src/components/ui/SearchBar";
+import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
 import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
 import { appwriteClient } from "@/src/services/appwrite";
 import {
@@ -170,6 +171,14 @@ export default function AttendanceScreen() {
   };
 
   const renderMetricsGrid = () => {
+    if (loading && !stats) {
+      return (
+        <View style={metricsGridStyle}>
+          <SkeletonLoader type="card" count={4} />
+        </View>
+      );
+    }
+
     if (!stats) return null;
 
     const metrics = [
@@ -230,13 +239,6 @@ export default function AttendanceScreen() {
             <MetricCard
               label={metric.label}
               value={metric.value}
-              trend={
-                metric.label === "Absent"
-                  ? { direction: "down", percentage: 5 }
-                  : metric.label === "Late"
-                    ? { direction: "up", percentage: 2 }
-                    : undefined
-              }
               icon={metric.icon}
             />
           </Animated.View>
@@ -444,6 +446,20 @@ export default function AttendanceScreen() {
               onChangeText={setSearchQuery}
               style={{ marginBottom: THEME.spacing.md }}
             />
+            {!loading && filteredRecords.length === 0 && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: isDark
+                    ? THEME.dark.text.tertiary
+                    : THEME.light.text.tertiary,
+                  textAlign: "center",
+                  marginVertical: THEME.spacing.xl,
+                }}
+              >
+                No attendance records for today.
+              </Text>
+            )}
           </Animated.View>
         )}
         scrollEnabled={true}

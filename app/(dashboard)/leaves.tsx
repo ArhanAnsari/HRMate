@@ -41,6 +41,7 @@ export default function LeavesScreen() {
   const [leaveStats, setLeaveStats] = useState<any>(null);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   // Apply Leave modal state
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -54,6 +55,7 @@ export default function LeavesScreen() {
     if (!user?.companyId || !user?.$id) return;
 
     setLoading(true);
+    setLoadError(false);
     try {
       const [stats, requests] = await Promise.all([
         leavesService.getLeaveBalance(user.companyId, user.$id),
@@ -71,12 +73,9 @@ export default function LeavesScreen() {
       setLeaveRequests(requests);
     } catch (error) {
       console.error("Failed to load leave data:", error);
-      setLeaveStats({
-        totalDays: 20,
-        usedDays: 0,
-        remainingDays: 20,
-      });
+      setLeaveStats(null);
       setLeaveRequests([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -469,16 +468,6 @@ export default function LeavesScreen() {
                     <MetricCard
                       label="Remaining"
                       value={leaveStats.remainingDays.toString()}
-                      trend={{
-                        direction:
-                          leaveStats.remainingDays >= leaveStats.totalDays * 0.5
-                            ? "up"
-                            : "down",
-                        percentage: Math.round(
-                          (leaveStats.remainingDays / leaveStats.totalDays) *
-                            100,
-                        ),
-                      }}
                     />
                   )}
                 </View>
@@ -491,7 +480,20 @@ export default function LeavesScreen() {
               </View>
             )}
 
-            {leaveRequests.length === 0 && !loading && (
+            {loadError && !loading && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: THEME.colors.danger,
+                  textAlign: "center",
+                  marginVertical: THEME.spacing.md,
+                }}
+              >
+                Failed to load leave data. Pull down to refresh.
+              </Text>
+            )}
+
+            {leaveRequests.length === 0 && !loading && !loadError && (
               <Text
                 style={{
                   fontSize: 14,

@@ -77,17 +77,16 @@ export const attendanceQueries = {
       records.documents.forEach((doc: any) => {
         if (doc.status === "present") {
           stats.present++;
-          // Check if check_in_time is before 9:00 AM
-          if (doc.check_in_time && doc.check_in_time < "09:00") {
-            stats.presentOnTime++;
-          }
+          // "present" status is assigned at check-in when the employee
+          // arrives before the 09:15 threshold, so it reliably indicates on-time
+          stats.presentOnTime++;
+        } else if (doc.status === "late") {
+          stats.present++; // late employees are physically present
+          stats.lateArrivals++;
         } else if (doc.status === "absent") {
           stats.absent++;
         } else if (doc.status === "on_leave") {
           stats.onLeave++;
-        }
-        if (doc.status === "late") {
-          stats.lateArrivals++;
         }
       });
 

@@ -46,10 +46,10 @@ export const authService = {
 
       const authUser = await account.get();
 
-      // Create company document
-      let companyId = "";
+      // Create company document — fail signup if this fails (company_id is required)
+      const now = new Date().toISOString();
+      let companyId: string;
       try {
-        const now = new Date().toISOString();
         const company = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.COMPANIES,
@@ -65,16 +65,24 @@ export const authService = {
         );
         companyId = company.$id;
       } catch {
-        companyId = "";
+        // Clean up: delete the auth account so user can retry signup
+        try {
+          await account.deleteSession("current");
+        } catch {
+          // Ignore cleanup errors
+        }
+        throw new Error(
+          "Failed to create company. Please try again.",
+        );
       }
 
-      // Create user document
+      // Create user document using the auth user's $id as the document ID
+      // so lookups by document ID match the auth user ID
       try {
-        const now = new Date().toISOString();
         const user = await databases.createDocument(
           APPWRITE_CONFIG.DATABASE_ID,
           DB_IDS.USERS,
-          ID.unique(),
+          authUser.$id,
           {
             email: data.email,
             full_name: data.name,

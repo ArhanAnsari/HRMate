@@ -4,12 +4,11 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GEMINI_CONFIG } from "../config/env";
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
+const GEMINI_API_KEY = GEMINI_CONFIG.API_KEY;
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-const AI_MODEL = "gemini-1.5-flash";
 
 export class GeminiAIService {
   static async generateAIInsights(data: {
@@ -24,7 +23,7 @@ export class GeminiAIService {
       return "AI insights not available. Configure EXPO_PUBLIC_GEMINI_API_KEY to enable.";
     }
     try {
-      const model = genAI.getGenerativeModel({ model: AI_MODEL });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
       const prompt = `As an HR analytics expert, provide 2-3 key insights about this workforce data in a friendly, actionable way:
       
@@ -51,7 +50,7 @@ Keep response concise (2-3 sentences max).`;
   ): Promise<string> {
     if (!GEMINI_API_KEY) return "AI not configured.";
     try {
-      const model = genAI.getGenerativeModel({ model: AI_MODEL });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
       const prompt = `Explain this salary in simple, human terms for a ${jobTitle} earning $${salary} annually. Include what this salary might cover (rent, bills, etc.) in a major US city. Keep it to 2-3 sentences.`;
 
@@ -77,7 +76,7 @@ Keep response concise (2-3 sentences max).`;
       ];
     }
     try {
-      const model = genAI.getGenerativeModel({ model: AI_MODEL });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
       const issues = [];
       if (data.lowAttendanceEmployees) {
@@ -122,7 +121,7 @@ Keep response concise (2-3 sentences max).`;
       return "AI features are not configured. Please set EXPO_PUBLIC_GEMINI_API_KEY in your environment to enable AI chat.";
     }
     try {
-      const model = genAI.getGenerativeModel({ model: AI_MODEL });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
       // Gemini only accepts "user" and "model" roles, not "assistant"
       const history = conversationHistory
@@ -147,7 +146,7 @@ Keep response concise (2-3 sentences max).`;
   ): Promise<string> {
     if (!GEMINI_API_KEY) return "AI not configured.";
     try {
-      const model = genAI.getGenerativeModel({ model: AI_MODEL });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
       const dataStr = payrollData
         .map((p) => `${p.month}: $${p.amount}`)

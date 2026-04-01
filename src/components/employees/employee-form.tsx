@@ -54,7 +54,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     joiningDate:
       initialEmployee?.joiningDate || new Date().toISOString().split("T")[0],
     dateOfBirth: initialEmployee?.dateOfBirth || "",
-    employmentType: "full_time",
+    employmentType:
+      initialEmployee?.employmentType ?? "full_time",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});

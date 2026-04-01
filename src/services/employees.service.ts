@@ -13,9 +13,18 @@ const mapDocToEmployee = (doc: any): Employee => ({
   phone: doc.phone || "",
   position: doc.position || "",
   department: doc.department || "",
-  joiningDate: doc.joining_date || "",
-  dateOfBirth: doc.date_of_birth,
+  // Normalize to date-only (YYYY-MM-DD) for consistent UI display
+  joiningDate:
+    typeof doc.joining_date === "string"
+      ? doc.joining_date.split("T")[0]
+      : "",
+  dateOfBirth:
+    typeof doc.date_of_birth === "string"
+      ? doc.date_of_birth.split("T")[0]
+      : undefined,
   status: doc.status || "active",
+  employmentType: doc.employment_type || "full_time",
+  baseSalary: typeof doc.base_salary === "number" ? doc.base_salary : doc.base_salary !== undefined ? parseFloat(doc.base_salary) || undefined : undefined,
   avatar: doc.profile_image,
   address: doc.address,
   createdAt: doc.created_at || doc.$createdAt || new Date().toISOString(),

@@ -40,16 +40,19 @@ export const analyticsService = {
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - 6);
 
-      const startStr = startDate.toISOString().split("T")[0];
-      const endStr = endDate.toISOString().split("T")[0];
+      // Use full ISO timestamps for consistent Appwrite datetime comparisons
+      const startOfRange = new Date(startDate);
+      startOfRange.setUTCHours(0, 0, 0, 0);
+      const endOfRange = new Date(endDate);
+      endOfRange.setUTCHours(23, 59, 59, 999);
 
       const records = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
         [
           Query.equal("company_id", companyId),
-          Query.greaterThanEqual("date", startStr),
-          Query.lessThanEqual("date", endStr),
+          Query.greaterThanEqual("date", startOfRange.toISOString()),
+          Query.lessThanEqual("date", endOfRange.toISOString()),
           Query.limit(500),
         ],
       );

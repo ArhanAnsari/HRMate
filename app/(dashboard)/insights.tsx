@@ -192,9 +192,7 @@ export default function InsightsScreen() {
     borderRadius: THEME.borderRadius.md,
   };
 
-  const hasAttendanceData =
-    attendanceTrendData.dates.length > 0 &&
-    attendanceTrendData.attendanceRates.some((r) => r > 0);
+  const hasAttendanceData = attendanceTrendData.dates.length > 0;
 
   const hasLeaveData =
     leaveChartData.approved + leaveChartData.pending + leaveChartData.rejected >

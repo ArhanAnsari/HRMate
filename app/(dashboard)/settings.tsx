@@ -120,6 +120,21 @@ export default function SettingsScreen() {
     fontSize: 14,
   };
 
+  const settingRowIconStyle: ViewStyle = {
+    width: 36,
+    height: 36,
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary,
+    justifyContent: "center",
+    alignItems: "center",
+  };
+
+  const settingRowLabelStyle: TextStyle = {
+    fontSize: 15,
+    fontWeight: "500",
+    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+  };
+
   const renderSetting = (
     label: string,
     value: boolean,
@@ -137,16 +152,7 @@ export default function SettingsScreen() {
     >
       <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: THEME.spacing.md }}>
         {icon && (
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: THEME.borderRadius.md,
-              backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+          <View style={settingRowIconStyle}>
             <MaterialCommunityIcons
               name={icon as any}
               size={20}
@@ -155,13 +161,7 @@ export default function SettingsScreen() {
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "500",
-              color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-            }}
-          >
+          <Text style={settingRowLabelStyle}>
             {label}
           </Text>
           {description && (
@@ -514,11 +514,11 @@ export default function SettingsScreen() {
             onPress={() => { setOldPassword(""); setNewPassword(""); setConfirmPassword(""); setShowPasswordModal(true); }}
             style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
           >
-            <View style={{ width: 36, height: 36, borderRadius: THEME.borderRadius.md, backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary, justifyContent: "center", alignItems: "center" }}>
+            <View style={settingRowIconStyle}>
               <MaterialCommunityIcons name="lock-outline" size={20} color={THEME.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? THEME.dark.text.primary : THEME.light.text.primary }}>Change Password</Text>
+              <Text style={settingRowLabelStyle}>Change Password</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
           </TouchableOpacity>
@@ -527,11 +527,11 @@ export default function SettingsScreen() {
             onPress={() => { setProfileName(user?.name || ""); setProfileEmail(user?.email || ""); setProfileCurrentPassword(""); setShowProfileModal(true); }}
             style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
           >
-            <View style={{ width: 36, height: 36, borderRadius: THEME.borderRadius.md, backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary, justifyContent: "center", alignItems: "center" }}>
+            <View style={settingRowIconStyle}>
               <MaterialCommunityIcons name="account-edit-outline" size={20} color={THEME.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? THEME.dark.text.primary : THEME.light.text.primary }}>Edit Profile</Text>
+              <Text style={settingRowLabelStyle}>Edit Profile</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
           </TouchableOpacity>

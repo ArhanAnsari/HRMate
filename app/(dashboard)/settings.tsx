@@ -5,18 +5,20 @@
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
 import { usePermissions } from "@/src/hooks/usePermissions";
 import { account, databases } from "@/src/services/appwrite";
 import BiometricAuthService from "@/src/services/biometric.service";
+import { storageService } from "@/src/services/storage.service";
 import { useAuthStore } from "@/src/state/auth.store";
 import { useBiometricStore } from "@/src/state/biometric.store";
 import { useNotificationStore } from "@/src/state/notifications.store";
 import { THEME } from "@/src/theme";
 import { Action } from "@/src/utils/permissions";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import Constants from "expo-constants";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -32,6 +34,7 @@ import {
   ViewStyle,
   useColorScheme,
 } from "react-native";
+import { ID } from "react-native-appwrite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
@@ -71,6 +74,18 @@ export default function SettingsScreen() {
   const [availableWorkspaces, setAvailableWorkspaces] = useState<any[]>([]);
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
 
+  // New Workspace & Image Picker logic
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+  const [profileImageLoading, setProfileImageLoading] = useState(false);
+  const [companyLogoUri, setCompanyLogoUri] = useState<string | null>(null);
+
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] =
+    useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceSize, setNewWorkspaceSize] = useState("");
+  const [newWorkspaceLogo, setNewWorkspaceLogo] = useState<string | null>(null);
+  const [createWorkspaceLoading, setCreateWorkspaceLoading] = useState(false);
+
   useEffect(() => {
     const checkBiometric = async () => {
       const available = await BiometricAuthService.isAvailable();
@@ -78,6 +93,114 @@ export default function SettingsScreen() {
     };
     checkBiometric();
   }, []);
+
+  const pickImage = async (setter: (uri: string) => void) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setter(result.assets[0].uri);
+    }
+  };
+
+  const pickCompanyLogo = async (setter: (uri: string) => void) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9], // better ratio for company logos usually, or 1:1 depending
+      quality: 0.5,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setter(result.assets[0].uri);
+    }
+  };
+
+  const handleUploadProfileImage = async () => {
+    if (!profileImageUri || !user) return;
+    try {
+      setProfileImageLoading(true);
+      const filename = profileImageUri.split("/").pop() || "avatar.jpg";
+      const fileType = filename.endsWith(".png") ? "image/png" : "image/jpeg";
+      const fileData = { name: filename, type: fileType, uri: profileImageUri };
+
+      const result = await storageService.uploadAvatar(fileData);
+      const currentPrefs = await account.getPrefs();
+      await account.updatePrefs({ ...currentPrefs, avatarUrl: result.url });
+
+      Alert.alert("Success", "Profile image updated");
+      setProfileImageUri(null);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to upload image");
+    } finally {
+      setProfileImageLoading(false);
+    }
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspaceName.trim()) {
+      return Alert.alert("Error", "Workspace name is required");
+    }
+    try {
+      setCreateWorkspaceLoading(true);
+      let logoUrl = "";
+      if (newWorkspaceLogo) {
+        const filename = newWorkspaceLogo.split("/").pop() || "logo.jpg";
+        const fileType = filename.endsWith(".png") ? "image/png" : "image/jpeg";
+        const fileData = {
+          name: filename,
+          type: fileType,
+          uri: newWorkspaceLogo,
+        };
+
+        const result = await storageService.uploadCompanyLogo(fileData);
+        logoUrl = result.url;
+      }
+
+      const newCompany = await databases.createDocument(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.COMPANIES,
+        ID.unique(),
+        {
+          name: newWorkspaceName.trim(),
+          size: newWorkspaceSize || "1-10",
+          status: "active",
+          logoUrl: logoUrl || "",
+        },
+      );
+
+      await databases.createDocument(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.EMPLOYEES,
+        ID.unique(),
+        {
+          companyId: newCompany.$id,
+          userId: user?.$id,
+          email: user?.email,
+          name: user?.name,
+          role: "admin",
+          status: "active",
+          joinDate: new Date().toISOString(),
+        },
+      );
+
+      setShowCreateWorkspaceModal(false);
+      setNewWorkspaceName("");
+      setNewWorkspaceLogo(null);
+      Alert.alert(
+        "Success",
+        "Workspace created successfully. You can now switch to it.",
+      );
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error.message || "Failed to create workspace");
+    } finally {
+      setCreateWorkspaceLoading(false);
+    }
+  };
 
   const containerStyle: ViewStyle = {
     flex: 1,
@@ -124,7 +247,9 @@ export default function SettingsScreen() {
     width: 36,
     height: 36,
     borderRadius: THEME.borderRadius.md,
-    backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary,
+    backgroundColor: isDark
+      ? THEME.dark.background.tertiary
+      : THEME.light.background.tertiary,
     justifyContent: "center",
     alignItems: "center",
   };
@@ -150,7 +275,14 @@ export default function SettingsScreen() {
         paddingVertical: THEME.spacing.md,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: THEME.spacing.md }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          flex: 1,
+          gap: THEME.spacing.md,
+        }}
+      >
         {icon && (
           <View style={settingRowIconStyle}>
             <MaterialCommunityIcons
@@ -161,14 +293,14 @@ export default function SettingsScreen() {
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={settingRowLabelStyle}>
-            {label}
-          </Text>
+          <Text style={settingRowLabelStyle}>{label}</Text>
           {description && (
             <Text
               style={{
                 fontSize: 12,
-                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                color: isDark
+                  ? THEME.dark.text.secondary
+                  : THEME.light.text.secondary,
                 marginTop: 2,
               }}
             >
@@ -226,26 +358,47 @@ export default function SettingsScreen() {
     if (!user?.companyId) return;
     setCompanyLoading(true);
     try {
+      let logoUrl = undefined;
+      if (companyLogoUri) {
+        const filename = companyLogoUri.split("/").pop() || "logo.jpg";
+        const fileType = filename.endsWith(".png") ? "image/png" : "image/jpeg";
+        const fileData = {
+          name: filename,
+          type: fileType,
+          uri: companyLogoUri,
+        };
+        const result = await storageService.uploadCompanyLogo(fileData);
+        logoUrl = result.url;
+      }
+
+      const payload: any = {
+        name: companyName,
+        size: parseInt(companySize) || 0,
+      };
+      if (logoUrl) payload.logoUrl = logoUrl;
+
       await databases.updateDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.COMPANIES,
         user.companyId,
-        {
-          name: companyName,
-          size: parseInt(companySize) || 0,
-        },
+        payload,
       );
       Alert.alert("Success", "Company Details updated");
       setShowCompanyModal(false);
+      setCompanyLogoUri(null);
     } catch (e: any) {
       if (e.code === 404) {
         // create if collection schema allows
         try {
+          const payload: any = {
+            name: companyName,
+            size: parseInt(companySize) || 0,
+          };
           await databases.createDocument(
             APPWRITE_CONFIG.DATABASE_ID,
             DB_IDS.COMPANIES,
             user.companyId,
-            { name: companyName, size: parseInt(companySize) || 0 },
+            payload,
           );
           Alert.alert("Success", "Company Details saved");
           setShowCompanyModal(false);
@@ -435,7 +588,9 @@ export default function SettingsScreen() {
             style={{
               fontSize: THEME.typography.h5.fontSize,
               fontWeight: "700",
-              color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              color: isDark
+                ? THEME.dark.text.primary
+                : THEME.light.text.primary,
               marginBottom: THEME.spacing.xs,
             }}
           >
@@ -444,7 +599,9 @@ export default function SettingsScreen() {
           <Text
             style={{
               fontSize: THEME.typography.bodySm.fontSize,
-              color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+              color: isDark
+                ? THEME.dark.text.secondary
+                : THEME.light.text.secondary,
               marginBottom: THEME.spacing.md,
             }}
           >
@@ -465,7 +622,9 @@ export default function SettingsScreen() {
                 color: THEME.colors.primary,
               }}
             >
-              {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Member"}
+              {user?.role
+                ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                : "Member"}
             </Text>
           </View>
         </PremiumCard>
@@ -492,8 +651,19 @@ export default function SettingsScreen() {
             "bell-outline",
             "Receive real-time HR alerts",
           )}
-          <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
-          {renderSetting("Email Reminders", emailReminders, setEmailReminders, "email-outline", "Get email digests and reminders")}
+          <View
+            style={{
+              height: 1,
+              backgroundColor: isDark ? THEME.dark.border : THEME.light.border,
+            }}
+          />
+          {renderSetting(
+            "Email Reminders",
+            emailReminders,
+            setEmailReminders,
+            "email-outline",
+            "Get email digests and reminders",
+          )}
         </PremiumCard>
 
         <Text style={sectionTitleStyle}>Security</Text>
@@ -507,33 +677,85 @@ export default function SettingsScreen() {
                 biometricType === "face" ? "face-recognition" : "fingerprint",
                 "Secure login with biometrics",
               )}
-              <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: isDark
+                    ? THEME.dark.border
+                    : THEME.light.border,
+                }}
+              />
             </>
           )}
           <TouchableOpacity
-            onPress={() => { setOldPassword(""); setNewPassword(""); setConfirmPassword(""); setShowPasswordModal(true); }}
-            style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
+            onPress={() => {
+              setOldPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+              setShowPasswordModal(true);
+            }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: THEME.spacing.md,
+              gap: THEME.spacing.md,
+            }}
           >
             <View style={settingRowIconStyle}>
-              <MaterialCommunityIcons name="lock-outline" size={20} color={THEME.colors.primary} />
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={20}
+                color={THEME.colors.primary}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={settingRowLabelStyle}>Change Password</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+            />
           </TouchableOpacity>
-          <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
+          <View
+            style={{
+              height: 1,
+              backgroundColor: isDark ? THEME.dark.border : THEME.light.border,
+            }}
+          />
           <TouchableOpacity
-            onPress={() => { setProfileName(user?.name || ""); setProfileEmail(user?.email || ""); setProfileCurrentPassword(""); setShowProfileModal(true); }}
-            style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
+            onPress={() => {
+              setProfileName(user?.name || "");
+              setProfileEmail(user?.email || "");
+              setProfileCurrentPassword("");
+              setShowProfileModal(true);
+            }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: THEME.spacing.md,
+              gap: THEME.spacing.md,
+            }}
           >
             <View style={settingRowIconStyle}>
-              <MaterialCommunityIcons name="account-edit-outline" size={20} color={THEME.colors.primary} />
+              <MaterialCommunityIcons
+                name="account-edit-outline"
+                size={20}
+                color={THEME.colors.primary}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={settingRowLabelStyle}>Edit Profile</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={20}
+              color={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+            />
           </TouchableOpacity>
         </PremiumCard>
 
@@ -791,11 +1013,73 @@ export default function SettingsScreen() {
                 color: isDark
                   ? THEME.dark.text.primary
                   : THEME.light.text.primary,
-                marginBottom: THEME.spacing.lg,
+                marginBottom: THEME.spacing.sm,
               }}
             >
               Edit Profile
             </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: THEME.spacing.lg,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => pickImage(setProfileImageUri)}
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: THEME.spacing.md,
+                }}
+              >
+                {profileImageUri ? (
+                  <Text
+                    style={{
+                      color: THEME.colors.primary,
+                      fontSize: 10,
+                      textAlign: "center",
+                    }}
+                  >
+                    Image Set
+                  </Text>
+                ) : (
+                  <MaterialCommunityIcons
+                    name="camera"
+                    size={24}
+                    color={THEME.colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleUploadProfileImage}
+                disabled={profileImageLoading || !profileImageUri}
+                style={{
+                  paddingHorizontal: THEME.spacing.md,
+                  paddingVertical: THEME.spacing.sm,
+                  backgroundColor: profileImageUri
+                    ? THEME.colors.primary
+                    : isDark
+                      ? THEME.dark.border
+                      : THEME.light.border,
+                  borderRadius: THEME.borderRadius.md,
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 12 }}
+                >
+                  {profileImageLoading ? "Uploading..." : "Upload Avatar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <TextInput
               style={modalInputStyle}
               placeholder="Full Name"
@@ -903,6 +1187,63 @@ export default function SettingsScreen() {
             }}
           >
             <Text style={titleStyle}>Edit Company Info</Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: THEME.spacing.lg,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => pickCompanyLogo(setCompanyLogoUri)}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: THEME.borderRadius.md,
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: THEME.spacing.md,
+                }}
+              >
+                {companyLogoUri ? (
+                  <Text
+                    style={{
+                      color: THEME.colors.primary,
+                      fontSize: 10,
+                      textAlign: "center",
+                    }}
+                  >
+                    Logo Set
+                  </Text>
+                ) : (
+                  <MaterialCommunityIcons
+                    name="camera"
+                    size={24}
+                    color={THEME.colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: isDark
+                      ? THEME.dark.text.secondary
+                      : THEME.light.text.secondary,
+                    marginBottom: THEME.spacing.xs,
+                  }}
+                >
+                  Update Company Logo
+                </Text>
+                <Text style={{ fontSize: 10, color: THEME.colors.primary }}>
+                  Will be saved on Save button press.
+                </Text>
+              </View>
+            </View>
 
             <TextInput
               style={modalInputStyle}
@@ -1080,10 +1421,159 @@ export default function SettingsScreen() {
             )}
 
             <PrimaryButton
+              label="Create New Workspace"
+              onPress={() => {
+                setShowWorkspaceModal(false);
+                setShowCreateWorkspaceModal(true);
+              }}
+              style={{ marginBottom: THEME.spacing.md }}
+            />
+
+            <PrimaryButton
               label="Close"
               onPress={() => setShowWorkspaceModal(false)}
               variant="secondary"
             />
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* Create Workspace Modal */}
+      <Modal
+        visible={showCreateWorkspaceModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCreateWorkspaceModal(false)}
+      >
+        <BlurView
+          intensity={80}
+          tint={isDark ? "dark" : "light"}
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            padding: THEME.spacing.xl,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: isDark
+                ? THEME.dark.background.main
+                : THEME.light.background.main,
+              borderRadius: THEME.borderRadius.lg,
+              padding: THEME.spacing.xl,
+            }}
+          >
+            <Text style={titleStyle}>New Workspace</Text>
+
+            <TouchableOpacity
+              onPress={() => pickCompanyLogo(setNewWorkspaceLogo)}
+              style={{
+                alignSelf: "center",
+                width: 80,
+                height: 80,
+                backgroundColor: isDark
+                  ? THEME.dark.background.tertiary
+                  : THEME.light.background.tertiary,
+                borderRadius: THEME.borderRadius.md,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: THEME.spacing.md,
+              }}
+            >
+              {newWorkspaceLogo ? (
+                <Text style={{ color: THEME.colors.primary }}>
+                  Logo Selected
+                </Text> // Using Text because Expo Image needs setup, or we can use standard Image
+              ) : (
+                <MaterialCommunityIcons
+                  name="camera-plus"
+                  size={30}
+                  color={THEME.colors.primary}
+                />
+              )}
+            </TouchableOpacity>
+            {newWorkspaceLogo && (
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginBottom: THEME.spacing.sm,
+                  fontSize: 12,
+                  color: THEME.colors.success,
+                }}
+              >
+                Logo picked successfully
+              </Text>
+            )}
+
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Workspace Name"
+              placeholderTextColor={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+              value={newWorkspaceName}
+              onChangeText={setNewWorkspaceName}
+            />
+            <TextInput
+              style={modalInputStyle}
+              placeholder="Company Size (e.g. 1-10)"
+              placeholderTextColor={
+                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+              }
+              value={newWorkspaceSize}
+              onChangeText={setNewWorkspaceSize}
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                gap: THEME.spacing.md,
+                marginTop: THEME.spacing.md,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => setShowCreateWorkspaceModal(false)}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: isDark
+                    ? THEME.dark.background.tertiary
+                    : THEME.light.background.tertiary,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark
+                      ? THEME.dark.text.primary
+                      : THEME.light.text.primary,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCreateWorkspace}
+                disabled={createWorkspaceLoading}
+                style={{
+                  flex: 1,
+                  paddingVertical: THEME.spacing.md,
+                  borderRadius: THEME.borderRadius.md,
+                  alignItems: "center",
+                  backgroundColor: THEME.colors.primary,
+                }}
+              >
+                {createWorkspaceLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    Create
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </BlurView>
       </Modal>

@@ -11,7 +11,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Query } from "appwrite";
+import { Query } from "react-native-appwrite";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";

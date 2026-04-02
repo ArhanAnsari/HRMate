@@ -7,7 +7,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 
 import { usePermissions } from "@/src/hooks/usePermissions";
 import { Action } from "@/src/utils/permissions";
@@ -109,39 +109,15 @@ export default function DashboardLayout() {
           options={{
             title: tab.title,
             href: tab.hidden ? null : undefined,
-            tabBarIcon: ({ color, focused }) => (
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                {/* Pill background for active tab */}
-                <View
-                  style={{
-                    backgroundColor: focused
-                      ? `${THEME.colors.primary}18`
-                      : "transparent",
-                    borderRadius: THEME.borderRadius.lg,
-                    paddingHorizontal: THEME.spacing.md,
-                    paddingVertical: THEME.spacing.xs,
-                    alignItems: "center",
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={tab.icon as any}
-                    size={22}
-                    color={color}
-                  />
-                </View>
-                {/* Active dot indicator */}
-                {focused && (
-                  <View
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: THEME.colors.primary,
-                      marginTop: 2,
-                    }}
-                  />
-                )}
-              </View>
+            tabBarIcon: ({ color, focused, size }) => (
+              <MaterialCommunityIcons
+                name={tab.icon as any}
+                size={24}
+                color={color}
+                style={{
+                  opacity: focused ? 1 : 0.6,
+                }}
+              />
             ),
             tabBarLabel: ({ focused, color }) => (
               <Text
@@ -149,6 +125,7 @@ export default function DashboardLayout() {
                   color,
                   fontSize: 10,
                   fontWeight: focused ? "700" : "500",
+                  marginTop: 2,
                   opacity: focused ? 1 : 0.65,
                 }}
               >

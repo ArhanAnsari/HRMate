@@ -1,6 +1,6 @@
 import { functions } from "./appwrite";
 import { Employee, LeaveRequest, Payslip } from "../types";
-import { ExecutionMethod } from "appwrite";
+import { ExecutionMethod } from "react-native-appwrite";
 
 interface AIContext {
   user?: {

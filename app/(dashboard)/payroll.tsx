@@ -251,14 +251,12 @@ export default function PayrollScreen() {
                     <MetricCard
                       label="Processed"
                       value={payroll.successfullyProcessed.toString()}
-                      trend={{ direction: "up", percentage: 5 }}
                     />
                   </View>
                   <View style={{ width: "48%" }}>
                     <MetricCard
                       label="Pending"
                       value={payroll.pendingProcessing.toString()}
-                      trend={{ direction: "down", percentage: 2 }}
                     />
                   </View>
                 </View>

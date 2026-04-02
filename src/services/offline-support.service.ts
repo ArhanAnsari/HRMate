@@ -7,7 +7,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
-import { Query } from "appwrite";
+import { Query } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";
 

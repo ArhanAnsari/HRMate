@@ -1,4 +1,4 @@
-import { ID } from "appwrite";
+import { ID } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { LoginCredentials, SignupData, User } from "../types";
 import {

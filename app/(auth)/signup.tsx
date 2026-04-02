@@ -7,7 +7,7 @@ import { databases } from "@/src/services/appwrite";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { ID } from "appwrite";
+import { ID } from "react-native-appwrite";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {

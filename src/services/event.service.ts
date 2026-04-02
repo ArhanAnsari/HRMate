@@ -18,7 +18,7 @@
  */
 
 import { notificationPreferencesService } from "@/src/services/notification-preferences.service";
-import { ID, Query } from "appwrite";
+import { ID, Query } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { aiService } from "./ai.service";
 import { databases } from "./appwrite";

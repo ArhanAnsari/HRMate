@@ -11,7 +11,7 @@ import {
   leaveQueries,
   payrollQueries,
 } from "@/src/services/appwriteClient";
-import { Query, RealtimeResponseEvent } from "appwrite";
+import { Query, RealtimeResponseEvent } from "react-native-appwrite";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppError, handleError } from "../errors/AppError";
 

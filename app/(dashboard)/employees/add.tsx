@@ -2,6 +2,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { EmployeeForm } from "../../../src/components/employees/employee-form";
 import { useAuthStore } from "../../../src/state/auth.store";
@@ -48,8 +50,11 @@ export default function AddEmployeeScreen() {
     >
       <View style={{ flex: 1 }}>
         {/* Header */}
-        <View
+        <Animated.View
+          entering={FadeInDown.springify()}
           style={{
+            flexDirection: "row",
+            alignItems: "center",
             paddingHorizontal: THEME.spacing.lg,
             paddingBottom: THEME.spacing.md,
             paddingTop: THEME.spacing.md,
@@ -57,11 +62,11 @@ export default function AddEmployeeScreen() {
         >
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ marginBottom: THEME.spacing.md }}
+            style={{ marginRight: THEME.spacing.md }}
           >
             <MaterialCommunityIcons
               name="arrow-left"
-              size={24}
+              size={28}
               color={
                 isDark ? THEME.dark.text.primary : THEME.light.text.primary
               }
@@ -69,16 +74,16 @@ export default function AddEmployeeScreen() {
           </TouchableOpacity>
           <Text
             style={{
-              fontSize: 24,
-              fontWeight: "bold",
+              fontSize: 28,
+              fontWeight: "700",
               color: isDark
                 ? THEME.dark.text.primary
                 : THEME.light.text.primary,
             }}
           >
-            ➕ Add New Employee
+            Add New Employee
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Form */}
         <View style={{ flex: 1, paddingHorizontal: THEME.spacing.lg }}>

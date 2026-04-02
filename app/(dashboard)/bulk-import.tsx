@@ -18,10 +18,12 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { employeeService } from "@/src/services/employees.service";
+import { useRouter } from "expo-router";
 import { useAuthStore } from "@/src/state/auth.store";
 import { useEmployeeStore } from "@/src/state/employee.store";
 import { THEME } from "@/src/theme";
@@ -48,6 +50,7 @@ interface ImportResult {
 export default function BulkImportScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const router = useRouter();
   const { user } = useAuthStore();
   const { bulkImportEmployees } = useEmployeeStore();
 
@@ -391,9 +394,40 @@ export default function BulkImportScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Bulk Import Employees</Text>
-      </View>
+                      <Animated.View
+          entering={FadeInDown.springify()}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: THEME.spacing.lg,
+            paddingBottom: THEME.spacing.md,
+            paddingTop: THEME.spacing.md,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ marginRight: THEME.spacing.md, padding: THEME.spacing.xs }}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={28}
+              color={
+                isDark ? THEME.dark.text.primary : THEME.light.text.primary
+              }
+            />
+          </TouchableOpacity>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "700",
+              color: isDark
+                ? THEME.dark.text.primary
+                : THEME.light.text.primary,
+            }}
+          >
+            Import
+          </Text>
+        </Animated.View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>

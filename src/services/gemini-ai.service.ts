@@ -3,7 +3,7 @@
  * Handles AI insights, salary explanations, and smart recommendations
  */
 
-import { ExecutionMethod } from "appwrite";
+import { ExecutionMethod } from "react-native-appwrite";
 import { functions } from "./appwrite";
 
 export interface AIInsightData {

@@ -7,7 +7,7 @@
  *   - getLeaveStats(companyId)          → leave status distribution
  */
 
-import { Query } from "appwrite";
+import { Query } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";
 

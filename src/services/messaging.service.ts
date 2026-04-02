@@ -12,7 +12,7 @@
  * - Retry mechanism for failed sends
  */
 
-import { ID, Query } from "appwrite";
+import { ID, Query } from "react-native-appwrite";
 import * as Notifications from "expo-notifications";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { databases } from "./appwrite";

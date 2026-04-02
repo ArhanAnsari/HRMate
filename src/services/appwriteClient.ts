@@ -3,7 +3,7 @@
  * Real Appwrite API integration (NO MOCK DATA)
  */
 
-import { ID, Query } from "appwrite";
+import { ID, Query } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { account, databases, handleAppwriteError } from "./appwrite";
 

@@ -1,4 +1,4 @@
-import { ID, Query } from "appwrite";
+import { ID, Query } from "react-native-appwrite";
 import { APPWRITE_CONFIG, DB_IDS } from "../config/env";
 import { Payslip, SalaryStructure } from "../types";
 import { databases } from "./appwrite";

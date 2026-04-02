@@ -1,4 +1,6 @@
+import { Input } from "@/src/components/ui/input";
 import { Logo } from "@/src/components/ui/Logo";
+import { PasswordField } from "@/src/components/ui/PasswordField";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
 import { databases } from "@/src/services/appwrite";
@@ -14,13 +16,13 @@ import {
   SafeAreaView,
   ScrollView,
   Text,
-  TextInput,
   TextStyle,
   TouchableOpacity,
   useColorScheme,
   View,
   ViewStyle,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -43,40 +45,13 @@ export default function SignupScreen() {
       : THEME.light.background.main,
   };
 
-  const contentStyle: ViewStyle = {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.xl,
-  };
-
-  const titleStyle: TextStyle = {
-    fontSize: 28,
-    fontWeight: "700",
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.sm,
-    marginTop: THEME.spacing.lg,
-  };
-
-  const subtitleStyle: TextStyle = {
-    fontSize: 14,
-    color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
-    marginBottom: THEME.spacing.lg,
-  };
-
-  const inputStyle: TextStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? THEME.dark.border : THEME.light.border,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.md,
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.md,
-    fontSize: 16,
-  };
-
   const errorStyle: TextStyle = {
     color: THEME.colors.danger,
     fontSize: 13,
     marginBottom: THEME.spacing.md,
+    backgroundColor: THEME.colors.dangerLight,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.sm,
   };
 
   const linkStyle: TextStyle = {
@@ -163,115 +138,162 @@ export default function SignupScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={contentStyle}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginBottom: THEME.spacing.md }}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={
-                isDark ? THEME.dark.text.primary : THEME.light.text.primary
-              }
-            />
-          </TouchableOpacity>
-
-          <Logo size="md" containerStyle={{ marginBottom: THEME.spacing.md }} />
-
-          <Text style={titleStyle}>Create Account</Text>
-          <Text style={subtitleStyle}>Get started with HRMate today</Text>
-
-          {displayError ? <Text style={errorStyle}>{displayError}</Text> : null}
-
-          <TextInput
-            placeholder="Full Name"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={formData.name}
-            onChangeText={(text) => updateField("name", text)}
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={formData.email}
-            onChangeText={(text) => updateField("email", text)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <TextInput
-            placeholder="Company Name"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={formData.companyName}
-            onChangeText={(text) => updateField("companyName", text)}
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <TextInput
-            placeholder="Password (min 8 characters)"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={formData.password}
-            onChangeText={(text) => updateField("password", text)}
-            secureTextEntry
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <TextInput
-            placeholder="Confirm Password"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={formData.confirmPassword}
-            onChangeText={(text) => updateField("confirmPassword", text)}
-            secureTextEntry
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <PrimaryButton
-            label={isLoading ? "Creating Account..." : "Sign Up"}
-            onPress={handleSignup}
-            disabled={isLoading}
-            loading={isLoading}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Decorative hero section */}
+          <Animated.View
+            entering={FadeInUp.duration(500)}
             style={{
-              marginBottom: THEME.spacing.lg,
-              marginTop: THEME.spacing.md,
+              backgroundColor: THEME.colors.primary,
+              paddingTop: THEME.spacing.xl,
+              paddingBottom: THEME.spacing["3xl"],
+              alignItems: "center",
             }}
-          />
-
-          <View style={{ alignItems: "center" }}>
-            <Text
+          >
+            <TouchableOpacity
+              onPress={() => router.back()}
               style={{
-                color: isDark
-                  ? THEME.dark.text.secondary
-                  : THEME.light.text.secondary,
-                marginBottom: THEME.spacing.sm,
+                alignSelf: "flex-start",
+                marginLeft: THEME.spacing.md,
+                marginBottom: THEME.spacing.md,
+                padding: THEME.spacing.xs,
               }}
             >
-              Already have an account?
-            </Text>
-            <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-              <Text style={linkStyle}>Login</Text>
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
-          </View>
+
+            <Logo size="md" containerStyle={{ marginBottom: THEME.spacing.md }} />
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "700",
+                color: "#FFFFFF",
+                marginBottom: THEME.spacing.xs,
+              }}
+            >
+              Create Account
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              Get started with HRMate today
+            </Text>
+          </Animated.View>
+
+          {/* Form card overlapping hero */}
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            style={{
+              marginTop: -THEME.spacing.xl,
+              marginHorizontal: THEME.spacing.md,
+              backgroundColor: isDark
+                ? THEME.dark.background.alt
+                : THEME.light.background.main,
+              borderRadius: THEME.borderRadius.xl,
+              padding: THEME.spacing.lg,
+              ...THEME.shadows.lg,
+              marginBottom: THEME.spacing.xl,
+            }}
+          >
+            {displayError ? (
+              <Text style={errorStyle}>{displayError}</Text>
+            ) : null}
+
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
+              <Input
+                label="Full Name"
+                placeholder="John Doe"
+                value={formData.name}
+                onChangeText={(text) => updateField("name", text)}
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(300).springify()}>
+              <Input
+                label="Email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChangeText={(text) => updateField("email", text)}
+                keyboardType="email-address"
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(350).springify()}>
+              <Input
+                label="Company Name"
+                placeholder="Acme Inc."
+                value={formData.companyName}
+                onChangeText={(text) => updateField("companyName", text)}
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(400).springify()}>
+              <PasswordField
+                label="Password"
+                placeholder="Min. 8 characters"
+                value={formData.password}
+                onChangeText={(text) => updateField("password", text)}
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(450).springify()}>
+              <PasswordField
+                label="Confirm Password"
+                placeholder="Re-enter password"
+                value={formData.confirmPassword}
+                onChangeText={(text) => updateField("confirmPassword", text)}
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(500).springify()}>
+              <PrimaryButton
+                label={isLoading ? "Creating Account..." : "Sign Up"}
+                onPress={handleSignup}
+                disabled={isLoading}
+                loading={isLoading}
+                size="lg"
+                style={{
+                  marginBottom: THEME.spacing.lg,
+                  marginTop: THEME.spacing.sm,
+                }}
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingTop: THEME.spacing.md,
+                  borderTopWidth: 1,
+                  borderTopColor: isDark
+                    ? THEME.dark.border
+                    : THEME.light.border,
+                  gap: THEME.spacing.xs,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark
+                      ? THEME.dark.text.secondary
+                      : THEME.light.text.secondary,
+                    fontSize: 14,
+                  }}
+                >
+                  Already have an account?
+                </Text>
+                <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+                  <Text style={linkStyle}>Login</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

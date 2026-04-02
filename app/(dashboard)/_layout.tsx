@@ -7,7 +7,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { THEME } from "@/src/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 
 import { usePermissions } from "@/src/hooks/usePermissions";
 import { Action } from "@/src/utils/permissions";
@@ -84,14 +84,18 @@ export default function DashboardLayout() {
             : THEME.colors.border,
           height: THEME.componentSizes.tabBar,
           paddingBottom: 8,
-          paddingTop: 8,
-          elevation: 0,
-          shadowColor: "transparent",
+          paddingTop: 4,
+          // Premium shadow above the tab bar
+          shadowColor: isDark ? "#000000" : THEME.colors.shadowDark,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowRadius: 8,
+          elevation: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "500",
-          marginTop: 4,
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: 0,
         },
         tabBarIconStyle: {
           marginBottom: 0,
@@ -106,23 +110,46 @@ export default function DashboardLayout() {
             title: tab.title,
             href: tab.hidden ? null : undefined,
             tabBarIcon: ({ color, focused }) => (
-              <MaterialCommunityIcons
-                name={tab.icon as any}
-                size={24}
-                color={color}
-                style={{
-                  opacity: focused ? 1 : 0.6,
-                }}
-              />
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                {/* Pill background for active tab */}
+                <View
+                  style={{
+                    backgroundColor: focused
+                      ? `${THEME.colors.primary}18`
+                      : "transparent",
+                    borderRadius: THEME.borderRadius.lg,
+                    paddingHorizontal: THEME.spacing.md,
+                    paddingVertical: THEME.spacing.xs,
+                    alignItems: "center",
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={tab.icon as any}
+                    size={22}
+                    color={color}
+                  />
+                </View>
+                {/* Active dot indicator */}
+                {focused && (
+                  <View
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: THEME.colors.primary,
+                      marginTop: 2,
+                    }}
+                  />
+                )}
+              </View>
             ),
             tabBarLabel: ({ focused, color }) => (
               <Text
                 style={{
                   color,
                   fontSize: 10,
-                  fontWeight: "500",
-                  marginTop: 2,
-                  opacity: focused ? 1 : 0.6,
+                  fontWeight: focused ? "700" : "500",
+                  opacity: focused ? 1 : 0.65,
                 }}
               >
                 {tab.title}

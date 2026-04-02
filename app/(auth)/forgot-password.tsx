@@ -1,3 +1,4 @@
+import { Input } from "@/src/components/ui/input";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { authService } from "@/src/services/auth.service";
 import { THEME } from "@/src/theme";
@@ -10,13 +11,12 @@ import {
   SafeAreaView,
   ScrollView,
   Text,
-  TextInput,
   TextStyle,
   TouchableOpacity,
   useColorScheme,
-  View,
   ViewStyle,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -34,41 +34,13 @@ export default function ForgotPasswordScreen() {
       : THEME.light.background.main,
   };
 
-  const contentStyle: ViewStyle = {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.xl,
-  };
-
-  const titleStyle: TextStyle = {
-    fontSize: 28,
-    fontWeight: "700",
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.sm,
-  };
-
-  const subtitleStyle: TextStyle = {
-    fontSize: 14,
-    color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
-    marginBottom: THEME.spacing.xl,
-  };
-
-  const inputStyle: TextStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? THEME.dark.border : THEME.light.border,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.md,
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.md,
-    fontSize: 16,
-  };
-
   const errorStyle: TextStyle = {
     color: THEME.colors.danger,
     fontSize: 13,
     marginBottom: THEME.spacing.sm,
+    backgroundColor: THEME.colors.dangerLight,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.sm,
   };
 
   const successStyle: TextStyle = {
@@ -115,78 +87,124 @@ export default function ForgotPasswordScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={contentStyle}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginBottom: THEME.spacing.lg }}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Decorative hero section */}
+          <Animated.View
+            entering={FadeInUp.duration(500)}
+            style={{
+              backgroundColor: THEME.colors.primary,
+              paddingTop: THEME.spacing.xl,
+              paddingBottom: THEME.spacing["3xl"],
+              paddingHorizontal: THEME.spacing.md,
+            }}
           >
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={
-                isDark ? THEME.dark.text.primary : THEME.light.text.primary
-              }
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginBottom: THEME.spacing.lg, alignSelf: "flex-start" }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
 
-          <Text style={titleStyle}>Reset Password</Text>
-          <Text style={subtitleStyle}>
-            Enter your email and we&apos;ll send you a link to reset your
-            password.
-          </Text>
-
-          {error ? <Text style={errorStyle}>{error}</Text> : null}
-
-          {success ? (
-            <View
+            <Text
               style={{
-                backgroundColor: THEME.colors.successLight,
-                borderRadius: THEME.borderRadius.md,
-                padding: THEME.spacing.md,
-                marginBottom: THEME.spacing.lg,
+                fontSize: 28,
+                fontWeight: "700",
+                color: "#FFFFFF",
+                marginBottom: THEME.spacing.xs,
               }}
             >
-              <Text style={successStyle}>
-                ✅ Password reset email sent! Check your inbox and follow the
-                instructions to reset your password.
-              </Text>
+              Reset Password
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "rgba(255,255,255,0.75)",
+                lineHeight: 22,
+              }}
+            >
+              Enter your email and we&apos;ll send you a link to reset your
+              password.
+            </Text>
+          </Animated.View>
+
+          {/* Form card overlapping hero */}
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            style={{
+              marginTop: -THEME.spacing.xl,
+              marginHorizontal: THEME.spacing.md,
+              backgroundColor: isDark
+                ? THEME.dark.background.alt
+                : THEME.light.background.main,
+              borderRadius: THEME.borderRadius.xl,
+              padding: THEME.spacing.lg,
+              ...THEME.shadows.lg,
+              marginBottom: THEME.spacing.xl,
+            }}
+          >
+            {error ? <Text style={errorStyle}>{error}</Text> : null}
+
+            {success ? (
+              <Animated.View
+                entering={FadeInDown.springify()}
+                style={{
+                  backgroundColor: THEME.colors.successLight,
+                  borderRadius: THEME.borderRadius.md,
+                  padding: THEME.spacing.md,
+                  marginBottom: THEME.spacing.lg,
+                }}
+              >
+                <Text style={successStyle}>
+                  ✅ Password reset email sent! Check your inbox and follow the
+                  instructions to reset your password.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.replace("/(auth)/login")}
+                >
+                  <Text style={linkStyle}>Back to Login</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            ) : (
+              <>
+                <Animated.View entering={FadeInDown.delay(250).springify()}>
+                  <Input
+                    label="Email Address"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    editable={!loading}
+                  />
+                </Animated.View>
+
+                <Animated.View entering={FadeInDown.delay(350).springify()}>
+                  <PrimaryButton
+                    label={loading ? "Sending..." : "Send Reset Link"}
+                    onPress={handleReset}
+                    disabled={loading}
+                    loading={loading}
+                    size="lg"
+                    style={{ marginBottom: THEME.spacing.md }}
+                  />
+                </Animated.View>
+              </>
+            )}
+
+            <Animated.View
+              entering={FadeInDown.delay(450).springify()}
+              style={{
+                alignItems: "center",
+                paddingTop: THEME.spacing.md,
+                borderTopWidth: 1,
+                borderTopColor: isDark ? THEME.dark.border : THEME.light.border,
+                marginTop: THEME.spacing.sm,
+              }}
+            >
               <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-                <Text style={linkStyle}>Back to Login</Text>
+                <Text style={linkStyle}>← Back to Login</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              <TextInput
-                placeholder="Email address"
-                placeholderTextColor={
-                  isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-                }
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={inputStyle}
-                editable={!loading}
-              />
-
-              <PrimaryButton
-                label={loading ? "Sending..." : "Send Reset Link"}
-                onPress={handleReset}
-                disabled={loading}
-                loading={loading}
-                style={{ marginBottom: THEME.spacing.md }}
-              />
-            </>
-          )}
-
-          <View style={{ alignItems: "center", marginTop: THEME.spacing.md }}>
-            <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-              <Text style={linkStyle}>← Back to Login</Text>
-            </TouchableOpacity>
-          </View>
+            </Animated.View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

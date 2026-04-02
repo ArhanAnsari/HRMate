@@ -1,22 +1,24 @@
+import { Input } from "@/src/components/ui/input";
 import { Logo } from "@/src/components/ui/Logo";
+import { PasswordField } from "@/src/components/ui/PasswordField";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TextStyle,
-    TouchableOpacity,
-    useColorScheme,
-    View,
-    ViewStyle,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,41 +36,13 @@ export default function LoginScreen() {
       : THEME.light.background.main,
   };
 
-  const contentStyle: ViewStyle = {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.xl,
-  };
-
-  const titleStyle: TextStyle = {
-    fontSize: 32,
-    fontWeight: "700",
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.sm,
-  };
-
-  const subtitleStyle: TextStyle = {
-    fontSize: 16,
-    color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
-    marginBottom: THEME.spacing.xl,
-  };
-
-  const inputStyle: TextStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? THEME.dark.border : THEME.light.border,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.md,
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.md,
-    fontSize: 16,
-  };
-
   const errorStyle: TextStyle = {
     color: THEME.colors.danger,
     fontSize: 13,
     marginBottom: THEME.spacing.sm,
+    backgroundColor: THEME.colors.dangerLight,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.sm,
   };
 
   const linkStyle: TextStyle = {
@@ -105,79 +79,124 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={contentStyle}
-          showsVerticalScrollIndicator={false}
-        >
-          <Logo size="lg" containerStyle={{ marginBottom: THEME.spacing.xl }} />
-
-          <Text style={titleStyle}>Welcome Back</Text>
-          <Text style={subtitleStyle}>Enter your credentials to continue</Text>
-
-          {displayError ? <Text style={errorStyle}>{displayError}</Text> : null}
-
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor={
-              isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-            }
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={inputStyle}
-            editable={!isLoading}
-          />
-
-          <PrimaryButton
-            label={isLoading ? "Logging in..." : "Login"}
-            onPress={handleLogin}
-            disabled={isLoading}
-            loading={isLoading}
-            style={{ marginBottom: THEME.spacing.md }}
-          />
-
-          <TouchableOpacity
-            style={{ alignItems: "center", marginBottom: THEME.spacing.lg }}
-            onPress={() => router.push("/(auth)/forgot-password")}
-          >
-            <Text style={linkStyle}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <View
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Decorative hero section */}
+          <Animated.View
+            entering={FadeInUp.duration(500)}
             style={{
+              backgroundColor: THEME.colors.primary,
+              paddingTop: THEME.spacing.xxl,
+              paddingBottom: THEME.spacing["3xl"],
               alignItems: "center",
-              paddingTop: THEME.spacing.lg,
-              borderTopWidth: 1,
-              borderTopColor: isDark ? THEME.dark.border : THEME.light.border,
             }}
           >
+            <Logo size="lg" containerStyle={{ marginBottom: THEME.spacing.lg }} />
             <Text
               style={{
-                color: isDark
-                  ? THEME.dark.text.secondary
-                  : THEME.light.text.secondary,
-                marginBottom: THEME.spacing.sm,
+                fontSize: 26,
+                fontWeight: "700",
+                color: "#FFFFFF",
+                marginBottom: THEME.spacing.xs,
               }}
             >
-              Don&apos;t have an account?
+              Welcome Back
             </Text>
-            <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-              <Text style={linkStyle}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
+            <Text
+              style={{
+                fontSize: 15,
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              Sign in to your HRMate account
+            </Text>
+          </Animated.View>
+
+          {/* Form card overlapping hero */}
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            style={{
+              marginTop: -THEME.spacing.xl,
+              marginHorizontal: THEME.spacing.md,
+              backgroundColor: isDark
+                ? THEME.dark.background.alt
+                : THEME.light.background.main,
+              borderRadius: THEME.borderRadius.xl,
+              padding: THEME.spacing.lg,
+              ...THEME.shadows.lg,
+              marginBottom: THEME.spacing.xl,
+            }}
+          >
+            {displayError ? (
+              <Text style={errorStyle}>{displayError}</Text>
+            ) : null}
+
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
+              <Input
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(350).springify()}>
+              <PasswordField
+                label="Password"
+                placeholder="Min. 8 characters"
+                value={password}
+                onChangeText={setPassword}
+                editable={!isLoading}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(450).springify()}>
+              <TouchableOpacity
+                style={{ alignSelf: "flex-end", marginBottom: THEME.spacing.lg }}
+                onPress={() => router.push("/(auth)/forgot-password")}
+              >
+                <Text style={linkStyle}>Forgot Password?</Text>
+              </TouchableOpacity>
+
+              <PrimaryButton
+                label={isLoading ? "Logging in..." : "Login"}
+                onPress={handleLogin}
+                disabled={isLoading}
+                loading={isLoading}
+                size="lg"
+                style={{ marginBottom: THEME.spacing.lg }}
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingTop: THEME.spacing.md,
+                  borderTopWidth: 1,
+                  borderTopColor: isDark
+                    ? THEME.dark.border
+                    : THEME.light.border,
+                  gap: THEME.spacing.xs,
+                }}
+              >
+                <Text
+                  style={{
+                    color: isDark
+                      ? THEME.dark.text.secondary
+                      : THEME.light.text.secondary,
+                    fontSize: 14,
+                  }}
+                >
+                  Don&apos;t have an account?
+                </Text>
+                <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
+                  <Text style={linkStyle}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

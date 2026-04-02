@@ -338,11 +338,11 @@ export default function DashboardScreen() {
                   <View
                     style={{
                       position: "absolute",
-                      top: 8,
-                      right: 10,
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
+                      top: THEME.spacing.sm,
+                      right: THEME.spacing.sm,
+                      width: THEME.spacing.md - 2,
+                      height: THEME.spacing.md - 2,
+                      borderRadius: THEME.spacing.xs,
                       backgroundColor: THEME.colors.danger,
                       borderWidth: 2,
                       borderColor: THEME.colors.primary,

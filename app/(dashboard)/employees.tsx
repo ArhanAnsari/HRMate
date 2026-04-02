@@ -337,6 +337,13 @@ export default function EmployeesScreen() {
       .substring(0, 2);
   };
 
+  // Extended palette for avatar color variety beyond the core THEME colors
+  const AVATAR_EXTRA_COLORS = {
+    purple: "#8B5CF6",
+    pink: "#EC4899",
+    orange: "#F97316",
+  };
+
   const getAvatarColor = (name: string): string => {
     const colors = [
       THEME.colors.primary,
@@ -344,9 +351,9 @@ export default function EmployeesScreen() {
       THEME.colors.warning,
       THEME.colors.danger,
       THEME.colors.info,
-      "#8B5CF6", // purple
-      "#EC4899", // pink
-      "#F97316", // orange
+      AVATAR_EXTRA_COLORS.purple,
+      AVATAR_EXTRA_COLORS.pink,
+      AVATAR_EXTRA_COLORS.orange,
     ];
     if (!name) return colors[0];
     const index = name.charCodeAt(0) % colors.length;

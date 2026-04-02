@@ -184,7 +184,7 @@ export default function SettingsScreen() {
           false: isDark ? THEME.dark.border : THEME.light.border,
           true: THEME.colors.primary,
         }}
-        thumbColor={value ? "#FFFFFF" : "#FFFFFF"}
+        thumbColor={"#FFFFFF"}
       />
     </View>
   );

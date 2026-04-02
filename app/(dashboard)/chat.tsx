@@ -14,6 +14,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
+    ScrollView,
     Text,
     TextInput,
     TextStyle,
@@ -154,33 +155,33 @@ export default function AIAssistantScreen() {
             <View
               style={{
                 flexDirection: "row",
-                gap: THEME.spacing.sm,
+                alignItems: "center",
+                gap: THEME.spacing.xs,
                 marginBottom: THEME.spacing.xs,
               }}
             >
               <View
                 style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
                   backgroundColor: THEME.colors.primary,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
                 <MaterialCommunityIcons
-                  name="robot-happy"
-                  size={12}
+                  name="robot-happy-outline"
+                  size={13}
                   color="#fff"
                 />
               </View>
               <Text
                 style={{
                   fontSize: 12,
-                  fontWeight: "600",
-                  color: isDark
-                    ? THEME.dark.text.secondary
-                    : THEME.light.text.secondary,
+                  fontWeight: "700",
+                  color: THEME.colors.primary,
+                  letterSpacing: 0.3,
                 }}
               >
                 HRMate AI
@@ -239,27 +240,64 @@ export default function AIAssistantScreen() {
         <View
           style={{
             paddingHorizontal: THEME.spacing.lg,
-            paddingVertical: THEME.spacing.md,
+            paddingTop: THEME.spacing.md,
+            paddingBottom: THEME.spacing.lg,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: THEME.spacing.md,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? THEME.dark.border : THEME.light.border,
           }}
         >
-          <Text style={titleStyle}>AI Assistant</Text>
-          <Text
+          <View
             style={{
-              fontSize: 14,
-              color: isDark
-                ? THEME.dark.text.secondary
-                : THEME.light.text.secondary,
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: THEME.colors.primary,
+              justifyContent: "center",
+              alignItems: "center",
+              ...THEME.shadows.md,
             }}
           >
-            Ask me anything about HR
-          </Text>
+            <MaterialCommunityIcons name="robot-happy-outline" size={26} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontSize: THEME.typography.h5.fontSize,
+                fontWeight: "700",
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              }}
+            >
+              HRMate AI
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: THEME.colors.success,
+                }}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                }}
+              >
+                Online · Ask me anything about HR
+              </Text>
+            </View>
+          </View>
         </View>
 
         {messages.length === 1 && (
           <View
             style={{
-              paddingHorizontal: THEME.spacing.lg,
-              paddingVertical: THEME.spacing.md,
+              paddingTop: THEME.spacing.md,
+              paddingBottom: THEME.spacing.sm,
             }}
           >
             <Text
@@ -269,12 +307,22 @@ export default function AIAssistantScreen() {
                 color: isDark
                   ? THEME.dark.text.secondary
                   : THEME.light.text.secondary,
-                marginBottom: THEME.spacing.md,
+                paddingHorizontal: THEME.spacing.lg,
+                marginBottom: THEME.spacing.sm,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
               }}
             >
-              Try asking:
+              Suggested questions
             </Text>
-            <View style={{ gap: THEME.spacing.sm }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingHorizontal: THEME.spacing.lg,
+                gap: THEME.spacing.sm,
+              }}
+            >
               {QUICK_PROMPTS.map((prompt, idx) => (
                 <TouchableOpacity
                   key={idx}
@@ -282,13 +330,18 @@ export default function AIAssistantScreen() {
                   style={{
                     paddingHorizontal: THEME.spacing.md,
                     paddingVertical: THEME.spacing.sm,
-                    borderRadius: THEME.borderRadius.md,
+                    borderRadius: THEME.borderRadius.full,
                     borderWidth: 1,
-                    borderColor: isDark
-                      ? THEME.dark.border
-                      : THEME.light.border,
+                    borderColor: THEME.colors.primary,
+                    backgroundColor: isDark
+                      ? THEME.dark.background.alt
+                      : THEME.colors.primaryLight,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: THEME.spacing.xs,
                   }}
                 >
+                  <MaterialCommunityIcons name="lightbulb-outline" size={14} color={THEME.colors.primary} />
                   <Text
                     style={{
                       fontSize: 13,
@@ -300,7 +353,7 @@ export default function AIAssistantScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           </View>
         )}
 
@@ -329,51 +382,83 @@ export default function AIAssistantScreen() {
         >
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
+              borderTopWidth: 1,
+              borderTopColor: isDark ? THEME.dark.border : THEME.light.border,
+              backgroundColor: isDark
+                ? THEME.dark.background.main
+                : THEME.light.background.main,
               paddingHorizontal: THEME.spacing.lg,
               paddingVertical: THEME.spacing.md,
-              gap: THEME.spacing.sm,
+              paddingBottom: THEME.spacing.lg,
             }}
           >
-            <TextInput
-              placeholder="Type your message..."
-              placeholderTextColor={
-                isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
-              }
-              value={inputText}
-              onChangeText={setInputText}
+            <View
               style={{
-                flex: 1,
-                paddingHorizontal: THEME.spacing.md,
-                paddingVertical: THEME.spacing.sm,
-                borderRadius: THEME.borderRadius.md,
-                backgroundColor: isDark
-                  ? THEME.dark.background.tertiary
-                  : THEME.light.background.tertiary,
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-                borderWidth: 1,
-                borderColor: isDark ? THEME.dark.border : THEME.light.border,
-              }}
-              editable={!loading}
-            />
-            <TouchableOpacity
-              onPress={() => handleSendMessage(inputText)}
-              disabled={loading || !inputText.trim()}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: THEME.colors.primary,
-                justifyContent: "center",
-                alignItems: "center",
-                opacity: loading || !inputText.trim() ? 0.5 : 1,
+                flexDirection: "row",
+                alignItems: "flex-end",
+                gap: THEME.spacing.sm,
               }}
             >
-              <MaterialCommunityIcons name="send" size={20} color="#fff" />
-            </TouchableOpacity>
+              <TextInput
+                placeholder="Type your message..."
+                placeholderTextColor={
+                  isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary
+                }
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                maxLength={1000}
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  maxHeight: 120,
+                  paddingHorizontal: THEME.spacing.md,
+                  paddingVertical: THEME.spacing.sm,
+                  borderRadius: THEME.borderRadius.xl,
+                  backgroundColor: isDark
+                    ? THEME.dark.background.alt
+                    : THEME.light.background.alt,
+                  color: isDark
+                    ? THEME.dark.text.primary
+                    : THEME.light.text.primary,
+                  borderWidth: 1,
+                  borderColor: isDark ? THEME.dark.border : THEME.light.border,
+                  fontSize: 14,
+                  lineHeight: 20,
+                }}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                onPress={() => handleSendMessage(inputText)}
+                disabled={loading || !inputText.trim()}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor:
+                    loading || !inputText.trim()
+                      ? isDark
+                        ? THEME.dark.background.tertiary
+                        : THEME.light.background.tertiary
+                      : THEME.colors.primary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  ...THEME.shadows.sm,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="send"
+                  size={20}
+                  color={
+                    loading || !inputText.trim()
+                      ? isDark
+                        ? THEME.dark.text.tertiary
+                        : THEME.light.text.tertiary
+                      : "#FFFFFF"
+                  }
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </KeyboardAvoidingView>

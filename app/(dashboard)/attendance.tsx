@@ -457,7 +457,9 @@ export default function AttendanceScreen() {
                   marginVertical: THEME.spacing.xl,
                 }}
               >
-                No attendance records for today.
+                {records.length > 0 && searchQuery.trim() !== ""
+                  ? "No matching employees."
+                  : "No attendance records for today."}
               </Text>
             )}
           </Animated.View>

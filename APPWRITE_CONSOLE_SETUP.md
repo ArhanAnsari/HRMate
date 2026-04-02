@@ -258,7 +258,7 @@ Stores per-user notification toggle settings.
 | `updated_at` | Datetime | ❌ | — | |
 
 **Indexes:**
-- `user_index` → key on `user_id` ASC (unique)
+- `user_index` → **unique** key on `user_id` ASC (enforces one preferences document per user)
 
 ---
 
@@ -279,6 +279,8 @@ Stores Expo/APNs/FCM push tokens for each user device.
 **Indexes:**
 - `user_index` → key on `user_id` ASC
 - `token_index` → key on `device_token` ASC
+- `user_is_active_index` → composite key on `user_id` ASC, `is_active` ASC (supports `user_id + is_active` queries)
+- `user_device_token_index` → composite key on `user_id` ASC, `device_token` ASC (supports `user_id + device_token` lookups)
 
 ---
 

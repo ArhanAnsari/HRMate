@@ -1929,7 +1929,7 @@
         {
           "$id": "notif_prefs_user_index",
           "key": "user_index",
-          "type": "key",
+          "type": "unique",
           "status": "available",
           "error": "",
           "columns": [
@@ -2047,6 +2047,44 @@
             0
           ],
           "orders": [
+            "ASC"
+          ]
+        },
+        {
+          "$id": "device_tokens_user_is_active_index",
+          "key": "user_is_active_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id",
+            "is_active"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
+        },
+        {
+          "$id": "device_tokens_user_device_token_index",
+          "key": "user_device_token_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id",
+            "device_token"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
             "ASC"
           ]
         }

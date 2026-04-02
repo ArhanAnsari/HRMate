@@ -77,17 +77,16 @@ export const attendanceQueries = {
       records.documents.forEach((doc: any) => {
         if (doc.status === "present") {
           stats.present++;
-          // Check if check_in_time is before 9:00 AM
-          if (doc.check_in_time && doc.check_in_time < "09:00") {
-            stats.presentOnTime++;
-          }
+          // "present" status is assigned at check-in when the employee
+          // arrives before the 09:15 threshold, so it reliably indicates on-time
+          stats.presentOnTime++;
+        } else if (doc.status === "late") {
+          stats.present++; // late employees are physically present
+          stats.lateArrivals++;
         } else if (doc.status === "absent") {
           stats.absent++;
         } else if (doc.status === "on_leave") {
           stats.onLeave++;
-        }
-        if (doc.status === "late") {
-          stats.lateArrivals++;
         }
       });
 
@@ -170,7 +169,7 @@ export const attendanceQueries = {
         if (!grouped[day]) {
           grouped[day] = { day, present: 0, absent: 0 };
         }
-        if (doc.status === "present") grouped[day].present++;
+        if (doc.status === "present" || doc.status === "late") grouped[day].present++;
         else if (doc.status === "absent") grouped[day].absent++;
       });
 
@@ -212,7 +211,7 @@ export const attendanceQueries = {
       records.documents.forEach((doc: any) => {
         const day = new Date(doc.date).getDate();
         const weekIndex = Math.floor((day - 1) / 7);
-        if (doc.status === "present") {
+        if (doc.status === "present" || doc.status === "late") {
           weeks[weekIndex].attendance += 1;
         }
       });

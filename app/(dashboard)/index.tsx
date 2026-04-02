@@ -282,71 +282,96 @@ export default function DashboardScreen() {
       >
         <View style={styles.content}>
           {/* Header Row */}
-          <View
+          <Animated.View
+            entering={FadeInDown.springify()}
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
+              backgroundColor: THEME.colors.primary,
+              borderRadius: THEME.borderRadius.xl,
+              padding: THEME.spacing.lg,
               marginBottom: THEME.spacing.xl,
+              ...THEME.shadows.md,
             }}
           >
-            <Animated.View
-              entering={FadeInDown.springify()}
-              style={{ flex: 1 }}
-            >
-              <Text style={styles.greeting}>
-                {getGreeting()}, {user?.name?.split(" ")[0] || "Manager"}! 👋
-              </Text>
-              <Text style={styles.subheader}>
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </Text>
-            </Animated.View>
-            <Pressable
-              onPress={() => setShowNotifications(true)}
-              style={({ pressed }) => ({
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: isDark
-                  ? THEME.dark.background.tertiary
-                  : THEME.light.background.tertiary,
-                justifyContent: "center",
-                alignItems: "center",
-                opacity: pressed ? 0.7 : 1,
-                borderWidth: 1,
-                borderColor: isDark ? THEME.dark.border : THEME.light.border,
-              })}
-            >
-              <MaterialCommunityIcons
-                name="bell-outline"
-                size={22}
-                color={
-                  isDark ? THEME.dark.text.primary : THEME.light.text.primary
-                }
-              />
-              {unreadCount > 0 && (
-                <View
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <Text
                   style={{
-                    position: "absolute",
-                    top: 8,
-                    right: 10,
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: THEME.colors.danger,
-                    borderWidth: 2,
-                    borderColor: isDark
-                      ? THEME.dark.background.tertiary
-                      : THEME.light.background.tertiary,
+                    fontSize: THEME.typography.h3.fontSize,
+                    fontWeight: "700",
+                    color: "#FFFFFF",
+                    marginBottom: THEME.spacing.xs,
                   }}
+                >
+                  {getGreeting()}, {user?.name?.split(" ")[0] || "Manager"}! 👋
+                </Text>
+                <Text
+                  style={{
+                    fontSize: THEME.typography.bodySm.fontSize,
+                    color: "rgba(255,255,255,0.8)",
+                  }}
+                >
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowNotifications(true)}
+                style={({ pressed }) => ({
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <MaterialCommunityIcons
+                  name="bell-outline"
+                  size={22}
+                  color="#FFFFFF"
                 />
-              )}
-            </Pressable>
-          </View>
+                {unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: THEME.spacing.sm,
+                      right: THEME.spacing.sm,
+                      width: THEME.spacing.md - 2,
+                      height: THEME.spacing.md - 2,
+                      borderRadius: THEME.spacing.xs,
+                      backgroundColor: THEME.colors.danger,
+                      borderWidth: 2,
+                      borderColor: THEME.colors.primary,
+                    }}
+                  />
+                )}
+              </Pressable>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                marginTop: THEME.spacing.md,
+                gap: THEME.spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: THEME.spacing.xs }}>
+                <MaterialCommunityIcons name="account-group-outline" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
+                  {loading ? "—" : `${metrics.totalEmployees} employees`}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: THEME.spacing.xs }}>
+                <MaterialCommunityIcons name="clock-outline" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
+                  {loading ? "—" : `${metrics.pendingLeaves} pending leaves`}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
 
           {/* Quick Stats - Key Metrics */}
           <Animated.Text
@@ -571,56 +596,68 @@ export default function DashboardScreen() {
                 icon: "account-plus",
                 label: "Add Employee",
                 route: "/(dashboard)/employees/add" as const,
+                color: THEME.colors.primary,
+                bgColor: THEME.colors.primaryLight,
               },
               {
                 icon: "calendar-check",
                 label: "Attendance",
                 route: "/(dashboard)/attendance" as const,
+                color: THEME.colors.success,
+                bgColor: "#D1FAE5",
               },
               {
                 icon: "cash-multiple",
                 label: "Payroll",
                 route: "/(dashboard)/payroll" as const,
+                color: THEME.colors.warning,
+                bgColor: "#FEF3C7",
               },
               {
                 icon: "calendar-plus",
                 label: "Leave Request",
                 route: "/(dashboard)/leaves" as const,
+                color: THEME.colors.info,
+                bgColor: "#CFFAFE",
               },
             ].map((action, index) => (
-              <Pressable
+              <PremiumCard
                 key={index}
+                interactive
                 onPress={() => router.push(action.route)}
-                style={({ pressed }) => ({
-                  width: "48%",
-                  backgroundColor: isDark
-                    ? THEME.dark.background.tertiary
-                    : THEME.light.background.tertiary,
-                  borderRadius: THEME.borderRadius.md,
-                  padding: THEME.spacing.md,
-                  alignItems: "center",
-                  gap: THEME.spacing.sm,
-                  opacity: pressed ? 0.7 : 1,
-                })}
+                style={{ width: "48%" }}
               >
-                <MaterialCommunityIcons
-                  name={action.icon as any}
-                  size={28}
-                  color={THEME.colors.primary}
-                />
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "500",
-                    color: isDark
-                      ? THEME.dark.text.primary
-                      : THEME.light.text.primary,
-                    textAlign: "center",
-                  }}
-                >
-                  {action.label}
-                </Text>
-              </Pressable>
+                <View style={{ alignItems: "center", gap: THEME.spacing.sm }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: THEME.borderRadius.lg,
+                      backgroundColor: action.bgColor,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={action.icon as any}
+                      size={24}
+                      color={action.color}
+                    />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: isDark
+                        ? THEME.dark.text.primary
+                        : THEME.light.text.primary,
+                      textAlign: "center",
+                    }}
+                  >
+                    {action.label}
+                  </Text>
+                </View>
+              </PremiumCard>
             ))}
           </Animated.View>
         </View>

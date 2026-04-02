@@ -337,14 +337,43 @@ export default function EmployeesScreen() {
       .substring(0, 2);
   };
 
+  // Extended palette for avatar color variety beyond the core THEME colors
+  const AVATAR_EXTRA_COLORS = {
+    purple: "#8B5CF6",
+    pink: "#EC4899",
+    orange: "#F97316",
+  };
+
+  const getAvatarColor = (name: string): string => {
+    const colors = [
+      THEME.colors.primary,
+      THEME.colors.success,
+      THEME.colors.warning,
+      THEME.colors.danger,
+      THEME.colors.info,
+      AVATAR_EXTRA_COLORS.purple,
+      AVATAR_EXTRA_COLORS.pink,
+      AVATAR_EXTRA_COLORS.orange,
+    ];
+    if (!name) return colors[0];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
   const renderEmployeeCard = ({ item }: { item: EmployeeItem }) => (
     <PremiumCard
       interactive
       onPress={() => router.push(`/(dashboard)/employees/${item.id}`)}
-      style={employeeCardStyle}
+      style={[
+        employeeCardStyle,
+        {
+          borderLeftWidth: 3,
+          borderLeftColor: getStatusColor(item.status),
+        },
+      ]}
     >
       <View style={employeeCardContentStyle}>
-        <View style={avatarStyle}>
+        <View style={[avatarStyle, { backgroundColor: getAvatarColor(item.name) }]}>
           <Text style={avatarTextStyle}>{getInitials(item.name)}</Text>
         </View>
 
@@ -372,10 +401,28 @@ export default function EmployeesScreen() {
         <View
           style={[
             statusBadgeStyle,
-            { backgroundColor: getStatusColor(item.status) },
+            {
+              backgroundColor: getStatusColor(item.status) + "22",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            },
           ]}
         >
-          <Text style={statusBadgeTextStyle}>
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: getStatusColor(item.status),
+            }}
+          />
+          <Text
+            style={[
+              statusBadgeTextStyle,
+              { color: getStatusColor(item.status) },
+            ]}
+          >
             {getStatusLabel(item.status)}
           </Text>
         </View>
@@ -409,7 +456,16 @@ export default function EmployeesScreen() {
     return (
       <SafeAreaView style={containerStyle}>
         <View style={headerStyle}>
-          <Text style={headerTitleStyle}>Employees</Text>
+          <Text
+            style={{
+              fontSize: THEME.typography.h3.fontSize,
+              fontWeight: "700",
+              color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              marginBottom: THEME.spacing.md,
+            }}
+          >
+            Employees
+          </Text>
         </View>
         <View style={{ paddingHorizontal: THEME.spacing.lg }}>
           <SkeletonLoader type="card" count={4} />
@@ -421,7 +477,48 @@ export default function EmployeesScreen() {
   return (
     <SafeAreaView style={containerStyle}>
       <View style={headerStyle}>
-        <Text style={headerTitleStyle}>Employees ({employees.length})</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: THEME.spacing.md }}>
+          <View>
+            <Text
+              style={{
+                fontSize: THEME.typography.h3.fontSize,
+                fontWeight: "700",
+                color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              }}
+            >
+              Employees
+            </Text>
+            <Text
+              style={{
+                fontSize: THEME.typography.bodySm.fontSize,
+                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                marginTop: 2,
+              }}
+            >
+              Manage your team members
+            </Text>
+          </View>
+          {!loading && (
+            <View
+              style={{
+                paddingHorizontal: THEME.spacing.md,
+                paddingVertical: THEME.spacing.xs,
+                backgroundColor: THEME.colors.primaryLight,
+                borderRadius: THEME.borderRadius.full,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: THEME.typography.label.fontSize,
+                  fontWeight: "600",
+                  color: THEME.colors.primary,
+                }}
+              >
+                {employees.length} total
+              </Text>
+            </View>
+          )}
+        </View>
         <SearchBar
           placeholder="Search employees..."
           value={searchText}

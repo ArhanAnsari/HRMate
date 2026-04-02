@@ -5,6 +5,7 @@
 
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
 import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { APPWRITE_CONFIG, DB_IDS } from "@/src/config/env";
 import { usePermissions } from "@/src/hooks/usePermissions";
 import { account, databases } from "@/src/services/appwrite";
@@ -119,28 +120,63 @@ export default function SettingsScreen() {
     fontSize: 14,
   };
 
+  const settingRowIconStyle: ViewStyle = {
+    width: 36,
+    height: 36,
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: isDark ? THEME.dark.background.tertiary : THEME.light.background.tertiary,
+    justifyContent: "center",
+    alignItems: "center",
+  };
+
+  const settingRowLabelStyle: TextStyle = {
+    fontSize: 15,
+    fontWeight: "500",
+    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+  };
+
   const renderSetting = (
     label: string,
     value: boolean,
     onToggle: (val: boolean) => void,
+    icon?: string,
+    description?: string,
   ) => (
-    <PremiumCard
+    <View
       style={{
-        marginBottom: THEME.spacing.md,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        paddingVertical: THEME.spacing.md,
       }}
     >
-      <Text
-        style={{
-          fontSize: 15,
-          fontWeight: "500",
-          color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-        }}
-      >
-        {label}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: THEME.spacing.md }}>
+        {icon && (
+          <View style={settingRowIconStyle}>
+            <MaterialCommunityIcons
+              name={icon as any}
+              size={20}
+              color={THEME.colors.primary}
+            />
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={settingRowLabelStyle}>
+            {label}
+          </Text>
+          {description && (
+            <Text
+              style={{
+                fontSize: 12,
+                color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+                marginTop: 2,
+              }}
+            >
+              {description}
+            </Text>
+          )}
+        </View>
+      </View>
       <Switch
         value={value}
         onValueChange={onToggle}
@@ -148,8 +184,9 @@ export default function SettingsScreen() {
           false: isDark ? THEME.dark.border : THEME.light.border,
           true: THEME.colors.primary,
         }}
+        thumbColor={THEME.colors.background.main}
       />
-    </PremiumCard>
+    </View>
   );
 
   const handleLogout = () => {
@@ -358,6 +395,81 @@ export default function SettingsScreen() {
         contentContainerStyle={contentStyle}
         showsVerticalScrollIndicator={false}
       >
+        {/* Profile Header Card */}
+        <PremiumCard
+          style={{
+            marginBottom: THEME.spacing.lg,
+            alignItems: "center",
+            paddingVertical: THEME.spacing.xl,
+          }}
+        >
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: THEME.colors.primary,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: THEME.spacing.md,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "700",
+                color: "#FFFFFF",
+              }}
+            >
+              {user?.name
+                ? user.name
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .substring(0, 2)
+                : "?"}
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontSize: THEME.typography.h5.fontSize,
+              fontWeight: "700",
+              color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
+              marginBottom: THEME.spacing.xs,
+            }}
+          >
+            {user?.name || "User"}
+          </Text>
+          <Text
+            style={{
+              fontSize: THEME.typography.bodySm.fontSize,
+              color: isDark ? THEME.dark.text.secondary : THEME.light.text.secondary,
+              marginBottom: THEME.spacing.md,
+            }}
+          >
+            {user?.email || ""}
+          </Text>
+          <View
+            style={{
+              paddingHorizontal: THEME.spacing.md,
+              paddingVertical: THEME.spacing.xs,
+              backgroundColor: THEME.colors.primaryLight,
+              borderRadius: THEME.borderRadius.full,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: THEME.typography.labelSm.fontSize,
+                fontWeight: "600",
+                color: THEME.colors.primary,
+              }}
+            >
+              {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Member"}
+            </Text>
+          </View>
+        </PremiumCard>
+
         <Text style={titleStyle}>Settings</Text>
         <Text
           style={{
@@ -372,41 +484,58 @@ export default function SettingsScreen() {
         </Text>
 
         <Text style={sectionTitleStyle}>Notifications</Text>
-        {renderSetting(
-          "Push Notifications",
-          notificationsEnabled,
-          toggleNotificationsEnabled,
-        )}
-        {renderSetting("Email Reminders", emailReminders, setEmailReminders)}
+        <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
+          {renderSetting(
+            "Push Notifications",
+            notificationsEnabled,
+            toggleNotificationsEnabled,
+            "bell-outline",
+            "Receive real-time HR alerts",
+          )}
+          <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
+          {renderSetting("Email Reminders", emailReminders, setEmailReminders, "email-outline", "Get email digests and reminders")}
+        </PremiumCard>
 
         <Text style={sectionTitleStyle}>Security</Text>
-        {biometricAvailable &&
-          renderSetting(
-            `${biometricType === "face" ? "Face ID" : "Fingerprint"}`,
-            biometricEnabled,
-            handleBiometricToggle,
+        <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
+          {biometricAvailable && (
+            <>
+              {renderSetting(
+                `${biometricType === "face" ? "Face ID" : "Fingerprint"}`,
+                biometricEnabled,
+                handleBiometricToggle,
+                biometricType === "face" ? "face-recognition" : "fingerprint",
+                "Secure login with biometrics",
+              )}
+              <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
+            </>
           )}
-        <PrimaryButton
-          label="Change Password"
-          onPress={() => {
-            setOldPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
-            setShowPasswordModal(true);
-          }}
-          style={{ marginBottom: THEME.spacing.md }}
-        />
-        <PrimaryButton
-          label="Edit Profile"
-          onPress={() => {
-            setProfileName(user?.name || "");
-            setProfileEmail(user?.email || "");
-            setProfileCurrentPassword("");
-            setShowProfileModal(true);
-          }}
-          variant="secondary"
-          style={{ marginBottom: THEME.spacing.md }}
-        />
+          <TouchableOpacity
+            onPress={() => { setOldPassword(""); setNewPassword(""); setConfirmPassword(""); setShowPasswordModal(true); }}
+            style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
+          >
+            <View style={settingRowIconStyle}>
+              <MaterialCommunityIcons name="lock-outline" size={20} color={THEME.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={settingRowLabelStyle}>Change Password</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
+          </TouchableOpacity>
+          <View style={{ height: 1, backgroundColor: isDark ? THEME.dark.border : THEME.light.border }} />
+          <TouchableOpacity
+            onPress={() => { setProfileName(user?.name || ""); setProfileEmail(user?.email || ""); setProfileCurrentPassword(""); setShowProfileModal(true); }}
+            style={{ flexDirection: "row", alignItems: "center", paddingVertical: THEME.spacing.md, gap: THEME.spacing.md }}
+          >
+            <View style={settingRowIconStyle}>
+              <MaterialCommunityIcons name="account-edit-outline" size={20} color={THEME.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={settingRowLabelStyle}>Edit Profile</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? THEME.dark.text.tertiary : THEME.light.text.tertiary} />
+          </TouchableOpacity>
+        </PremiumCard>
 
         {can(Action.MANAGE_COMPANY_SETTINGS) && (
           <>

@@ -174,9 +174,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["name"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "name"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_1_subscription_index",
@@ -186,9 +192,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["subscription_tier"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "subscription_tier"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -318,9 +330,15 @@
           "type": "unique",
           "status": "available",
           "error": "",
-          "columns": ["email"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "email"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_2_company_index",
@@ -330,9 +348,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_2_role_index",
@@ -342,9 +366,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["role"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "role"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -556,9 +586,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_3_status_index",
@@ -568,9 +604,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["status"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "status"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_3_email_index",
@@ -580,9 +622,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["email"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "email"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -703,9 +751,18 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["employee_id", "date"],
-          "lengths": [0, 0],
-          "orders": ["ASC", "ASC"]
+          "columns": [
+            "employee_id",
+            "date"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
         },
         {
           "$id": "123751_4_company_index",
@@ -715,9 +772,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -856,9 +919,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["employee_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "employee_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_5_company_index",
@@ -868,9 +937,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_5_status_index",
@@ -880,9 +955,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["status"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "status"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -1024,9 +1105,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_6_employee_index",
@@ -1036,9 +1123,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["employee_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "employee_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -1189,9 +1282,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_7_employee_index",
@@ -1201,9 +1300,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["employee_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "employee_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_7_month_year_index",
@@ -1213,9 +1318,18 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["month", "year"],
-          "lengths": [0, 0],
-          "orders": ["ASC", "ASC"]
+          "columns": [
+            "month",
+            "year"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
         }
       ]
     },
@@ -1304,9 +1418,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_8_employee_index",
@@ -1316,9 +1436,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["employee_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "employee_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -1405,9 +1531,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["user_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "user_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_9_company_index",
@@ -1417,9 +1549,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -1517,9 +1655,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_10_user_index",
@@ -1529,9 +1673,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["user_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "user_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     },
@@ -1636,9 +1786,15 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["company_id"],
-          "lengths": [0],
-          "orders": ["ASC"]
+          "columns": [
+            "company_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         },
         {
           "$id": "123751_11_month_year_index",
@@ -1648,9 +1804,408 @@
           "type": "key",
           "status": "available",
           "error": "",
-          "columns": ["month", "year"],
-          "lengths": [0, 0],
-          "orders": ["ASC", "ASC"]
+          "columns": [
+            "month",
+            "year"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
+        }
+      ]
+    },
+    {
+      "$id": "notification_preferences_collection",
+      "$permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "notification_preferences_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "push_enabled",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "email_enabled",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "sms_enabled",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "leave_notifications",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "salary_notifications",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "attendance_notifications",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "announcement_notifications",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "do_not_disturb_start",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "do_not_disturb_end",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        }
+      ],
+      "indexes": [
+        {
+          "$id": "notif_prefs_user_index",
+          "key": "user_index",
+          "type": "unique",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
+        }
+      ]
+    },
+    {
+      "$id": "device_tokens_collection",
+      "$permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "device_tokens_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "device_token",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 1024,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "device_name",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "platform",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 32,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "is_active",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        }
+      ],
+      "indexes": [
+        {
+          "$id": "device_tokens_user_index",
+          "key": "user_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
+        },
+        {
+          "$id": "device_tokens_token_index",
+          "key": "token_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "device_token"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
+        },
+        {
+          "$id": "device_tokens_user_is_active_index",
+          "key": "user_is_active_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id",
+            "is_active"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
+        },
+        {
+          "$id": "device_tokens_user_device_token_index",
+          "key": "user_device_token_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id",
+            "device_token"
+          ],
+          "lengths": [
+            0,
+            0
+          ],
+          "orders": [
+            "ASC",
+            "ASC"
+          ]
+        }
+      ]
+    },
+    {
+      "$id": "notification_logs_collection",
+      "$permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "69ca4ebb0005b6c43a63",
+      "name": "notification_logs_collection",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "notification_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "channel",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 32,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 32,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "error_message",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 1024,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "retry_count",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": 0,
+          "min": -9223372036854775808,
+          "max": 9223372036854775807
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null,
+          "format": ""
+        }
+      ],
+      "indexes": [
+        {
+          "$id": "notif_logs_user_index",
+          "key": "user_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "user_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
+        },
+        {
+          "$id": "notif_logs_notif_index",
+          "key": "notification_index",
+          "type": "key",
+          "status": "available",
+          "error": "",
+          "columns": [
+            "notification_id"
+          ],
+          "lengths": [
+            0
+          ],
+          "orders": [
+            "ASC"
+          ]
         }
       ]
     }

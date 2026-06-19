@@ -228,29 +228,30 @@ export const attendanceQueries = {
   },
 
   /**
-   * Check in employee
+   * Check in employee - FIXED FOR DATETIME SCHEMAS
    */
   async checkIn(employeeId: string, companyId: string) {
     try {
-      const today = new Date().toISOString().split("T")[0];
       const now = new Date();
-      const timeString = now.toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
-      // Check if already checked in
+      // 1. Query if already checked in today using datetime range bounds
+      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
       const existing = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
-        [Query.equal("employee_id", employeeId), Query.equal("date", today)],
+        [
+          Query.equal("employee_id", employeeId), 
+          Query.greaterThanEqual("date", todayISO),
+          Query.lessThan("date", nextDay)
+        ],
       );
 
       if (existing.documents.length > 0) {
         throw new Error("Already checked in today");
       }
 
+      // 2. Resolve Employee Profile Meta-details safely
       let employeeName = "Employee";
       let employeeEmail = "";
       try {
@@ -260,11 +261,19 @@ export const attendanceQueries = {
           employeeId,
         );
         if (empDoc) {
-          employeeName = empDoc.name || empDoc.full_name || "Employee";
+          const fName = empDoc.first_name || empDoc.firstName || "";
+          const lName = empDoc.last_name || empDoc.lastName || "";
+          employeeName = `${fName} ${lName}`.trim() || "Employee";
           employeeEmail = empDoc.email || "";
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Could not find employee profile docs:", e);
+      }
 
+      // 3. Late Arrival evaluation rules (09:15 threshold)
+      const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15);
+
+      // 4. Create real Appwrite Document passing pure ISO string datetimes
       await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
@@ -274,93 +283,136 @@ export const attendanceQueries = {
           company_id: companyId,
           employee_name: employeeName,
           employee_email: employeeEmail,
-          date: today,
-          check_in_time: timeString,
-          status: timeString > "09:15" ? "late" : "present",
+          date: todayISO, // required datetime
+          check_in_time: now.toISOString(), // valid datetime type
+          status: isLate ? "late" : "present",
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
         },
       );
 
-      return {
-        success: true,
-        time: new Date().toLocaleTimeString(),
-      };
+      return { success: true, time: now.toLocaleTimeString() };
     } catch (error) {
       throw new Error(`Check-in failed: ${handleAppwriteError(error)}`);
     }
   },
 
   /**
-   * Check out employee
+   * Check out employee - FIXED FOR DATETIME SCHEMAS
    */
   async checkOut(employeeId: string) {
     try {
-      const today = new Date().toISOString().split("T")[0];
       const now = new Date();
-      const timeString = now.toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
 
       const existing = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
-        [Query.equal("employee_id", employeeId), Query.equal("date", today)],
+        [
+          Query.equal("employee_id", employeeId),
+          Query.greaterThanEqual("date", todayISO),
+          Query.lessThan("date", nextDay)
+        ],
       );
 
       if (existing.documents.length === 0) {
         throw new Error("You must check in first!");
       }
 
-      const record =
-        existing.documents.length > 0 ? existing.documents[0] : null;
-      if (record && record.check_out_time) {
+      const record = existing.documents[0];
+      if (record.check_out_time) {
         throw new Error("Already checked out today");
       }
 
+      // Compute calculated overall hours worked
       let hoursWorked = 0;
-      if (record && record.check_in_time) {
-        try {
-          const checkInParts = record.check_in_time.split(":");
-          const checkOutParts = timeString.split(":");
-          const inTime = new Date();
-          inTime.setHours(
-            parseInt(checkInParts[0], 10),
-            parseInt(checkInParts[1], 10),
-            0,
-          );
-          const outTime = new Date();
-          outTime.setHours(
-            parseInt(checkOutParts[0], 10),
-            parseInt(checkOutParts[1], 10),
-            0,
-          );
-
-          const diffMs = outTime.getTime() - inTime.getTime();
-          hoursWorked = Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10;
-        } catch (e) {}
+      if (record.check_in_time) {
+        const inTime = new Date(record.check_in_time);
+        const diffMs = now.getTime() - inTime.getTime();
+        hoursWorked = Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10;
       }
 
-      if (record) {
-        await databases.updateDocument(
-          APPWRITE_CONFIG.DATABASE_ID,
-          DB_IDS.ATTENDANCE,
-          record.$id,
-          {
-            check_out_time: timeString,
-            duration_hours: Math.max(0, hoursWorked),
-          },
-        );
-      }
+      await databases.updateDocument(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.ATTENDANCE,
+        record.$id,
+        {
+          check_out_time: now.toISOString(), // valid datetime type
+          duration_hours: Math.max(0, hoursWorked),
+          updated_at: now.toISOString()
+        },
+      );
 
-      return {
-        success: true,
-        time: new Date().toLocaleTimeString(),
-      };
+      return { success: true, time: now.toLocaleTimeString() };
     } catch (error) {
       throw new Error(`Check-out failed: ${handleAppwriteError(error)}`);
     }
   },
+
+  /**
+   * Bulk marks all employees in the company with a specific status for today
+   */
+  async bulkMarkCompanyAttendance(companyId: string, status: "present" | "absent" | "late") {
+    try {
+      const now = new Date();
+      const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+      // 1. Fetch all registered employees for this specific company
+      const companyEmployees = await databases.listDocuments(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.EMPLOYEES,
+        [Query.equal("company_id", companyId), Query.limit(100)]
+      );
+
+      // 2. Fetch any attendance records that have already been created today
+      const existingRecords = await databases.listDocuments(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.ATTENDANCE,
+        [
+          Query.equal("company_id", companyId),
+          Query.greaterThanEqual("date", todayISO),
+          Query.lessThan("date", nextDay)
+        ]
+      );
+
+      // Create a lookup set of employee IDs who already have records today
+      const alreadyMarkedIds = new Set(existingRecords.documents.map((d: any) => d.employee_id));
+
+      const defaultTime = now.toISOString();
+
+      // 3. Loop through employees and generate missing attendance rows
+      for (const employee of companyEmployees.documents) {
+        if (!alreadyMarkedIds.has(employee.$id)) {
+          const firstName = employee.first_name || employee.firstName || "";
+          const lastName = employee.last_name || employee.lastName || "";
+          const fullName = `${firstName} ${lastName}`.trim() || "Employee";
+
+          await databases.createDocument(
+            APPWRITE_CONFIG.DATABASE_ID,
+            DB_IDS.ATTENDANCE,
+            ID.unique(),
+            {
+              employee_id: employee.$id,
+              company_id: companyId,
+              employee_name: fullName,
+              employee_email: employee.email || "",
+              date: todayISO,
+              status: status,
+              // Only apply timestamps if they are marked physically present/late
+              check_in_time: status !== "absent" ? defaultTime : null,
+              created_at: defaultTime,
+              updated_at: defaultTime
+            }
+          );
+        }
+      }
+      return { success: true };
+    } catch (error) {
+      throw new Error(`Bulk marking failed: ${handleAppwriteError(error)}`);
+    }
+  }
 };
 
 /**

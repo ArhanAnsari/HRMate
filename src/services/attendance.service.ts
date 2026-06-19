@@ -77,4 +77,9 @@ export const attendanceService = {
   ): Promise<{ success: boolean; time: string }> {
     return attendanceQueries.checkOut(employeeId);
   },
+
+  // Bulk mark all missing employees with a specific status
+  async bulkMarkAll(companyId: string, status: "present" | "absent" | "late") {
+    return attendanceQueries.bulkMarkCompanyAttendance(companyId, status);
+  }
 };

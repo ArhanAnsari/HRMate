@@ -166,6 +166,10 @@ export default function DashboardLayout() {
         name="bulk-import"
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
+      <Tabs.Screen
+        name="payroll/setup"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

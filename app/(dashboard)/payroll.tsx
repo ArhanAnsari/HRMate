@@ -1,32 +1,38 @@
+/**
+ * 💰 PREMIUM PAYROLL CONTROL CENTRE
+ * Administrative workspace for managing salary distributions, structures, and batch payouts
+ */
+
 import { MetricCard } from "@/src/components/ui/MetricCard";
 import { PremiumCard } from "@/src/components/ui/PremiumCard";
-import { PrimaryButton } from "@/src/components/ui/PrimaryButton";
 import { SkeletonLoader } from "@/src/components/ui/SkeletonLoader";
-import { payrollService } from "@/src/services/domain.service";
+import { payrollQueries } from "@/src/services/appwriteClient";
 import { useAuthStore } from "@/src/state/auth.store";
 import { THEME } from "@/src/theme";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { ScrollView } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
   RefreshControl,
+  SafeAreaView,
   Text,
-  TextStyle,
+  TouchableOpacity,
   View,
-  ViewStyle,
   useColorScheme,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 
 export default function PayrollScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { user } = useAuthStore();
+
   const [payroll, setPayroll] = useState<any>(null);
-  const [payslips, setPayslips] = useState<any[]>([]);
+  const [recentPayslips, setRecentPayslips] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadPayrollData = useCallback(async () => {
@@ -34,250 +40,314 @@ export default function PayrollScreen() {
 
     setLoading(true);
     try {
-      const [data, slips] = await Promise.all([
-        payrollService.getPayrollStats(user.companyId),
-        payrollService.getPayslips(user.companyId),
+      const [stats, slips] = await Promise.all([
+        payrollQueries.getPayrollStats(user.companyId),
+        payrollQueries.getPayslips(user.companyId),
       ]);
-      setPayroll(data);
-      setPayslips(slips);
+      setPayroll(stats);
+      setRecentPayslips(slips ? slips.slice(0, 5) : []); // Keep top 5 historical logs
     } catch (error) {
-      console.error("Failed to load payroll data:", error);
+      console.error("Error loading payroll dashboard:", error);
+      Alert.alert(
+        "Data Error",
+        "Could not sync backend salary data registries.",
+      );
     } finally {
       setLoading(false);
     }
   }, [user?.companyId]);
 
   useEffect(() => {
-    if (user?.companyId) {
-      loadPayrollData();
-    }
-  }, [loadPayrollData, user?.companyId]);
+    loadPayrollData();
+  }, [loadPayrollData]);
 
-  const containerStyle: ViewStyle = {
-    flex: 1,
-    backgroundColor: isDark
-      ? THEME.dark.background.main
-      : THEME.light.background.main,
-  };
+  const themeStyles = isDark ? THEME.dark : THEME.light;
 
-  const contentStyle: ViewStyle = {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.md,
-  };
+  const renderHeader = () => {
+    const metrics = [
+      {
+        label: "Total Pay Periods",
+        value: payroll?.total?.toString() || "0",
+        icon: (
+          <MaterialCommunityIcons
+            name="calculator"
+            size={22}
+            color={THEME.colors.primary}
+          />
+        ),
+      },
+      {
+        label: "Processed (Released)",
+        value: payroll?.successfullyProcessed?.toString() || "0",
+        icon: (
+          <MaterialCommunityIcons
+            name="check-decagram"
+            size={22}
+            color={THEME.colors.success}
+          />
+        ),
+      },
+      {
+        label: "Pending (Drafts)",
+        value: payroll?.pendingProcessing?.toString() || "0",
+        icon: (
+          <MaterialCommunityIcons
+            name="file-clock-outline"
+            size={22}
+            color={THEME.colors.warning}
+          />
+        ),
+      },
+    ];
 
-  const titleStyle: TextStyle = {
-    fontSize: 28,
-    fontWeight: "700",
-    color: isDark ? THEME.dark.text.primary : THEME.light.text.primary,
-    marginBottom: THEME.spacing.sm,
-  };
-
-  const renderPayslip = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-      <PremiumCard style={{ marginBottom: THEME.spacing.md }}>
+    return (
+      <View style={{ marginBottom: THEME.spacing.md }}>
+        {/* Navigation Action Buttons Deck */}
         <View
           style={{
             flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            gap: THEME.spacing.md,
+            marginBottom: THEME.spacing.lg,
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: isDark
-                  ? THEME.dark.text.primary
-                  : THEME.light.text.primary,
-                marginBottom: THEME.spacing.xs,
-              }}
-            >
-              {item.employee}
+          <TouchableOpacity
+            onPress={() => router.push("/(dashboard)/payslips")}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: THEME.colors.primary,
+              paddingVertical: 14,
+              borderRadius: THEME.borderRadius.md,
+              gap: 6,
+              ...THEME.shadows.sm,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="wallet-outline"
+              size={18}
+              color="#fff"
+            />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+              View Statements
             </Text>
-            <Text
+          </TouchableOpacity>
+
+          {user?.role === "admin" && (
+            <TouchableOpacity
+              onPress={() => router.push("/(dashboard)/payroll/setup")} // 👈 Updated Route
               style={{
-                fontSize: 13,
-                color: isDark
-                  ? THEME.dark.text.secondary
-                  : THEME.light.text.secondary,
+                flex: 1,
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: isDark
+                  ? THEME.colors.dark.backgroundAlt
+                  : "#fff",
+                borderWidth: 1,
+                borderColor: themeStyles.border,
+                paddingVertical: 14,
+                borderRadius: THEME.borderRadius.md,
+                gap: 6,
               }}
             >
-              {item.month}
-            </Text>
-          </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "700",
-                color: THEME.colors.success,
-                marginBottom: THEME.spacing.xs,
-              }}
-            >
-              {item.amount}
-            </Text>
-            <View
-              style={{
-                backgroundColor:
-                  item.status === "paid"
-                    ? "rgba(76, 175, 80, 0.1)"
-                    : "rgba(255, 193, 7, 0.1)",
-                paddingHorizontal: THEME.spacing.sm,
-                paddingVertical: 2,
-                borderRadius: THEME.borderRadius.sm,
-              }}
-            >
+              <MaterialCommunityIcons
+                name="cog-outline"
+                size={18}
+                color={themeStyles.text.secondary}
+              />
               <Text
                 style={{
-                  fontSize: 11,
+                  color: themeStyles.text.secondary,
                   fontWeight: "600",
-                  color:
-                    item.status === "paid"
-                      ? THEME.colors.success
-                      : THEME.colors.warning,
+                  fontSize: 14,
                 }}
               >
-                {item.status === "paid" ? "Paid" : "Pending"}
+                Wages Setup
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Real-time Payroll Metrics Cards Container */}
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "600",
+            color: themeStyles.text.primary,
+            marginBottom: THEME.spacing.sm,
+          }}
+        >
+          Current Period Metrics
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            flexDirection: "row",
+            gap: THEME.spacing.md,
+            paddingBottom: THEME.spacing.md,
+          }}
+        >
+          {metrics.map((metric, index) => (
+            <Animated.View
+              key={index}
+              entering={ZoomIn.delay(index * 100).springify()}
+              style={{ width: 160 }}
+            >
+              <MetricCard
+                label={metric.label}
+                value={metric.value}
+                icon={metric.icon}
+              />
+            </Animated.View>
+          ))}
+        </ScrollView>
+
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "600",
+            color: themeStyles.text.primary,
+            marginVertical: THEME.spacing.md,
+          }}
+        >
+          Recent Historical Disbursals
+        </Text>
+      </View>
+    );
+  };
+
+  const renderRecentItem = ({ item, index }: { item: any; index: number }) => {
+    const net = item.net_salary ?? (item.amount ? Number(item.amount) : 0);
+    let monthLabel = "Salary Period";
+    try {
+      if (item.month) {
+        monthLabel = new Date(item.month).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+    } catch (_) {}
+
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+        <PremiumCard style={{ marginBottom: THEME.spacing.sm }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: themeStyles.text.primary,
+                }}
+              >
+                {item.employee || "Staff Disbursal"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: themeStyles.text.secondary,
+                  marginTop: 2,
+                }}
+              >
+                Period: {monthLabel}
+              </Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "800",
+                  color: THEME.colors.success,
+                }}
+              >
+                ₹{net.toLocaleString("en-IN")}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 10,
+                  color: themeStyles.text.tertiary,
+                  marginTop: 2,
+                }}
+              >
+                Paid out
               </Text>
             </View>
           </View>
-        </View>
-      </PremiumCard>
-    </Animated.View>
-  );
+        </PremiumCard>
+      </Animated.View>
+    );
+  };
 
   return (
-    <SafeAreaView style={containerStyle}>
-      {loading && payslips.length === 0 ? (
-        <View style={contentStyle}>
-          <Animated.View entering={FadeInDown.springify()}>
-            <Text style={titleStyle}>Payroll</Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: isDark
-                  ? THEME.dark.text.secondary
-                  : THEME.light.text.secondary,
-                marginBottom: THEME.spacing.lg,
-              }}
-            >
-              Salary processing and payslips
-            </Text>
-            <SkeletonLoader type="card" count={3} />
-          </Animated.View>
-        </View>
-      ) : (
-        <FlatList
-          data={payslips}
-          renderItem={renderPayslip}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={contentStyle}
-          refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={loadPayrollData} />
-          }
-          ListHeaderComponent={() => (
-            <Animated.View entering={FadeInDown.springify()}>
-              <Text style={titleStyle}>Payroll</Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDark
-                    ? THEME.dark.text.secondary
-                    : THEME.light.text.secondary,
-                  marginBottom: THEME.spacing.lg,
-                }}
-              >
-                Salary processing and payslips
-              </Text>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: themeStyles.background.main }}
+    >
+      {/* Upper Main Branding Row Header */}
+      <View
+        style={{
+          paddingHorizontal: THEME.spacing.lg,
+          paddingVertical: THEME.spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: themeStyles.border,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 26,
+            fontWeight: "700",
+            color: themeStyles.text.primary,
+          }}
+        >
+          Payroll Vault
+        </Text>
+        <Text style={{ fontSize: 12, color: themeStyles.text.secondary }}>
+          Manage operational distribution ledgers
+        </Text>
+      </View>
 
-              <PrimaryButton
-                label="Run Payroll Now"
-                onPress={() => {
-                  Alert.alert(
-                    "Run Payroll",
-                    "This will process real salaries, generate payslips in the cloud, and issue payouts for all active employees. Continue?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Start Processing",
-                        onPress: async () => {
-                          if (!user?.companyId) return;
-                          setLoading(true);
-                          try {
-                            const processed =
-                              await payrollService.processPayroll(
-                                user.companyId,
-                              );
-                            Alert.alert(
-                              "Success",
-                              `Payroll processed. Generated ${processed} payslip(s) in Appwrite for the current month!`,
-                            );
-                            loadPayrollData(); // refresh data
-                          } catch (err: any) {
-                            Alert.alert(
-                              "Error",
-                              err.message || "Failed to process payroll",
-                            );
-                            setLoading(false);
-                          }
-                        },
-                      },
-                    ],
-                  );
-                }}
-                style={{
-                  marginBottom: THEME.spacing.md,
-                  backgroundColor: THEME.colors.primary,
-                }}
-              />
-
-              <PrimaryButton
-                label="View Downloadable Payslips"
-                onPress={() => router.push("/(dashboard)/payslips")}
-                variant="secondary"
-                style={{ marginBottom: THEME.spacing.lg }}
-              />
-
-              {payroll && (
-                <View
+      <FlatList
+        data={recentPayslips}
+        renderItem={renderRecentItem}
+        keyExtractor={(item) => item.id || item.$id}
+        contentContainerStyle={{ padding: THEME.spacing.lg }}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={loadPayrollData} />
+        }
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={() => (
+          <View style={{ alignItems: "center", marginTop: THEME.spacing.xl }}>
+            {loading ? (
+              <SkeletonLoader type="list" count={3} />
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="file-cancel-outline"
+                  size={44}
+                  color={themeStyles.text.tertiary}
+                />
+                <Text
                   style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginBottom: THEME.spacing.xl,
+                    color: themeStyles.text.tertiary,
+                    fontSize: 13,
+                    marginTop: THEME.spacing.xs,
                   }}
                 >
-                  <View style={{ width: "48%" }}>
-                    <MetricCard
-                      label="Processed"
-                      value={payroll.successfullyProcessed.toString()}
-                    />
-                  </View>
-                  <View style={{ width: "48%" }}>
-                    <MetricCard
-                      label="Pending"
-                      value={payroll.pendingProcessing.toString()}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: isDark
-                    ? THEME.dark.text.primary
-                    : THEME.light.text.primary,
-                  marginBottom: THEME.spacing.md,
-                }}
-              >
-                Recent Payslips
-              </Text>
-            </Animated.View>
-          )}
-        />
-      )}
+                  No historical logs recorded for this account.
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+      />
     </SafeAreaView>
   );
 }

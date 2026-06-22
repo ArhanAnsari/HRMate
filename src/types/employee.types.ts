@@ -5,6 +5,10 @@ export type EmploymentStatus =
   | "terminated";
 
 export interface SalaryStructure {
+  basic_salary: string;
+  allowances: string;
+  deductions: string;
+  tax: string;
   basic: number;
   hra: number; // House Rent Allowance
   dearness?: number; // Dearness Allowance

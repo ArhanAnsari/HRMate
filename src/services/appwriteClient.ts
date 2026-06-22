@@ -107,20 +107,30 @@ export const attendanceQueries = {
   },
 
   /**
-   * Get attendance records for today
+   * Get attendance records for today - TIMEZONE AGNOSTIC FIX
    */
   async getTodayRecords(
     companyId: string,
     date: string = new Date().toISOString().split("T")[0],
   ) {
     try {
+      // Create strict UTC day bounds to match across all locations
+      const baseDate = new Date(date);
+      baseDate.setUTCHours(0, 0, 0, 0);
+      const todayISO = baseDate.toISOString();
+
+      const nextDate = new Date(baseDate);
+      nextDate.setUTCDate(baseDate.getUTCDate() + 1);
+      const nextDayISO = nextDate.toISOString();
+
       const records = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
         [
           Query.equal("company_id", companyId),
-          Query.equal("date", date),
-          Query.limit(50),
+          Query.greaterThanEqual("date", todayISO),
+          Query.lessThan("date", nextDayISO),
+          Query.limit(100),
         ],
       );
 
@@ -130,8 +140,8 @@ export const attendanceQueries = {
         name: doc.employee_name || "N/A",
         email: doc.employee_email || "",
         status: doc.status,
-        checkIn: doc.check_in_time || "-",
-        checkOut: doc.check_out_time || "-",
+        checkIn: doc.check_in_time ? new Date(doc.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-",
+        checkOut: doc.check_out_time ? new Date(doc.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-",
         duration: doc.duration_hours ? `${doc.duration_hours}h` : "-",
         hoursWorked: doc.duration_hours || 0,
       }));
@@ -230,13 +240,15 @@ export const attendanceQueries = {
   /**
    * Check in employee - FIXED FOR DATETIME SCHEMAS
    */
+  /**
+   * Check in employee - DATETIME COMPLIANT
+   */
   async checkIn(employeeId: string, companyId: string) {
     try {
       const now = new Date();
       const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-
-      // 1. Query if already checked in today using datetime range bounds
       const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
       const existing = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
@@ -251,7 +263,6 @@ export const attendanceQueries = {
         throw new Error("Already checked in today");
       }
 
-      // 2. Resolve Employee Profile Meta-details safely
       let employeeName = "Employee";
       let employeeEmail = "";
       try {
@@ -267,13 +278,11 @@ export const attendanceQueries = {
           employeeEmail = empDoc.email || "";
         }
       } catch (e) {
-        console.warn("Could not find employee profile docs:", e);
+        console.warn("Could not find employee profile meta details:", e);
       }
 
-      // 3. Late Arrival evaluation rules (09:15 threshold)
       const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15);
 
-      // 4. Create real Appwrite Document passing pure ISO string datetimes
       await databases.createDocument(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
@@ -283,8 +292,8 @@ export const attendanceQueries = {
           company_id: companyId,
           employee_name: employeeName,
           employee_email: employeeEmail,
-          date: todayISO, // required datetime
-          check_in_time: now.toISOString(), // valid datetime type
+          date: todayISO,
+          check_in_time: now.toISOString(),
           status: isLate ? "late" : "present",
           created_at: now.toISOString(),
           updated_at: now.toISOString()
@@ -298,7 +307,7 @@ export const attendanceQueries = {
   },
 
   /**
-   * Check out employee - FIXED FOR DATETIME SCHEMAS
+   * Check out employee - DATETIME COMPLIANT
    */
   async checkOut(employeeId: string) {
     try {
@@ -325,7 +334,6 @@ export const attendanceQueries = {
         throw new Error("Already checked out today");
       }
 
-      // Compute calculated overall hours worked
       let hoursWorked = 0;
       if (record.check_in_time) {
         const inTime = new Date(record.check_in_time);
@@ -338,7 +346,7 @@ export const attendanceQueries = {
         DB_IDS.ATTENDANCE,
         record.$id,
         {
-          check_out_time: now.toISOString(), // valid datetime type
+          check_out_time: now.toISOString(),
           duration_hours: Math.max(0, hoursWorked),
           updated_at: now.toISOString()
         },
@@ -351,38 +359,112 @@ export const attendanceQueries = {
   },
 
   /**
-   * Bulk marks all employees in the company with a specific status for today
+   * 🌟 NEW: Admin Force-override an individual employee's daily status record
+   */
+  async adminOverrideAttendance(
+    companyId: string, 
+    employeeId: string, 
+    name: string, 
+    email: string, 
+    status: "present" | "absent" | "late"
+  ) {
+    try {
+      const now = new Date();
+      
+      // Strict UTC normalization matching getTodayRecords bounds
+      const baseDate = new Date();
+      baseDate.setUTCHours(0, 0, 0, 0);
+      const todayISO = baseDate.toISOString();
+
+      const nextDate = new Date(baseDate);
+      nextDate.setUTCDate(baseDate.getUTCDate() + 1);
+      const nextDayISO = nextDate.toISOString();
+
+      const existing = await databases.listDocuments(
+        APPWRITE_CONFIG.DATABASE_ID,
+        DB_IDS.ATTENDANCE,
+        [
+          Query.equal("employee_id", employeeId),
+          Query.greaterThanEqual("date", todayISO),
+          Query.lessThan("date", nextDayISO)
+        ]
+      );
+
+      const payload = {
+        employee_id: employeeId,
+        company_id: companyId,
+        employee_name: name,
+        employee_email: email,
+        date: todayISO,
+        status: status,
+        check_in_time: status !== "absent" ? now.toISOString() : null,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString()
+      };
+
+      if (existing.documents.length > 0) {
+        await databases.updateDocument(
+          APPWRITE_CONFIG.DATABASE_ID,
+          DB_IDS.ATTENDANCE,
+          existing.documents[0].$id,
+          { 
+            status: status, 
+            check_in_time: payload.check_in_time, 
+            updated_at: payload.updated_at 
+          }
+        );
+      } else {
+        await databases.createDocument(
+          APPWRITE_CONFIG.DATABASE_ID,
+          DB_IDS.ATTENDANCE,
+          ID.unique(),
+          payload
+        );
+      }
+      return { success: true };
+    } catch (error) {
+      throw new Error(`Failed to override record: ${handleAppwriteError(error)}`);
+    }
+  },
+
+  /**
+   * 🌟 NEW: Bulk marks all remaining unlogged company employees for today
+   */
+   /**
+   * Bulk marks all remaining unlogged company employees for today - TIMEZONE AGNOSTIC FIX
    */
   async bulkMarkCompanyAttendance(companyId: string, status: "present" | "absent" | "late") {
     try {
       const now = new Date();
-      const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+      
+      // Strict UTC normalization matching getTodayRecords bounds
+      const baseDate = new Date();
+      baseDate.setUTCHours(0, 0, 0, 0);
+      const todayISO = baseDate.toISOString();
 
-      // 1. Fetch all registered employees for this specific company
+      const nextDate = new Date(baseDate);
+      nextDate.setUTCDate(baseDate.getUTCDate() + 1);
+      const nextDayISO = nextDate.toISOString();
+
       const companyEmployees = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.EMPLOYEES,
         [Query.equal("company_id", companyId), Query.limit(100)]
       );
 
-      // 2. Fetch any attendance records that have already been created today
       const existingRecords = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.ATTENDANCE,
         [
           Query.equal("company_id", companyId),
           Query.greaterThanEqual("date", todayISO),
-          Query.lessThan("date", nextDay)
+          Query.lessThan("date", nextDayISO)
         ]
       );
 
-      // Create a lookup set of employee IDs who already have records today
       const alreadyMarkedIds = new Set(existingRecords.documents.map((d: any) => d.employee_id));
-
       const defaultTime = now.toISOString();
 
-      // 3. Loop through employees and generate missing attendance rows
       for (const employee of companyEmployees.documents) {
         if (!alreadyMarkedIds.has(employee.$id)) {
           const firstName = employee.first_name || employee.firstName || "";
@@ -400,7 +482,6 @@ export const attendanceQueries = {
               employee_email: employee.email || "",
               date: todayISO,
               status: status,
-              // Only apply timestamps if they are marked physically present/late
               check_in_time: status !== "absent" ? defaultTime : null,
               created_at: defaultTime,
               updated_at: defaultTime
@@ -412,7 +493,7 @@ export const attendanceQueries = {
     } catch (error) {
       throw new Error(`Bulk marking failed: ${handleAppwriteError(error)}`);
     }
-  }
+  },
 };
 
 /**
@@ -422,34 +503,36 @@ export const payrollQueries = {
   /**
    * Get payroll statistics
    */
+  /**
+   * Get payroll statistics safely without crashing on type mismatches
+   */
   async getPayrollStats(companyId: string) {
     try {
-      const employees = await databases.listDocuments(
-        APPWRITE_CONFIG.DATABASE_ID,
-        DB_IDS.EMPLOYEES,
-        [Query.equal("company_id", companyId)],
-      );
-
-      const payslips = await databases.listDocuments(
+      const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.PAYSLIPS,
-        [Query.equal("company_id", companyId)],
+        [Query.equal("company_id", companyId), Query.limit(500)],
       );
 
-      const currentMonth = new Date().toISOString().substring(0, 7);
-      const thisMonthPayslips = payslips.documents.filter(
-        (p: any) => p.month.substring(0, 7) === currentMonth,
-      );
+      const payslips = response.documents;
+      const currentMonthKey = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+
+      // 1. Filter and compute stats safely with type guards
+      const processed = payslips.filter((p: any) => {
+        // Safe conversion of month to string regardless of whether it's stored as number, string, or undefined
+        const pMonth = p.month !== undefined && p.month !== null ? String(p.month) : "";
+        return pMonth.substring(0, 7) === currentMonthKey && p.status === "generated";
+      }).length;
+
+      const pending = payslips.filter((p: any) => {
+        const pMonth = p.month !== undefined && p.month !== null ? String(p.month) : "";
+        return pMonth.substring(0, 7) === currentMonthKey && p.status === "draft";
+      }).length;
 
       return {
-        totalEmployees: employees.total,
-        totalPayroll: `$${thisMonthPayslips.reduce((sum: number, p: any) => sum + (p.net_salary || 0), 0).toLocaleString()}`,
-        pendingProcessing: thisMonthPayslips.filter(
-          (p: any) => p.status === "draft",
-        ).length,
-        successfullyProcessed: thisMonthPayslips.filter(
-          (p: any) => p.status === "sent",
-        ).length,
+        total: processed + pending,
+        successfullyProcessed: processed, // Maps cleanly to your payroll.tsx metric targets
+        pendingProcessing: pending,       // Maps cleanly to your payroll.tsx metric targets
       };
     } catch (error) {
       throw new Error(

@@ -42,6 +42,15 @@ const mapInputToLeaveDoc = (
   };
 };
 
+export interface LeaveBalance {
+  total: number;
+  used: number;
+  remaining: number;
+  totalDays: number;
+  usedDays: number;
+  remainingDays: number;
+}
+
 export const leavesService = {
   /**
    * Apply for leave
@@ -81,6 +90,7 @@ export const leavesService = {
           Query.equal("company_id", companyId),
           Query.equal("employee_id", employeeId),
           Query.orderDesc("$createdAt"),
+          Query.limit(100)
         ],
       );
 
@@ -92,12 +102,12 @@ export const leavesService = {
   },
 
   /**
-   * Get leave balance for employee
+   * Get leave balance for employee - REMOVED HARDCODED 20 DAYS
    */
   async getLeaveBalance(
     companyId: string,
     employeeId: string,
-  ): Promise<{ total: number; used: number; remaining: number }> {
+  ): Promise<LeaveBalance> {
     try {
       const leaves = await this.getEmployeeLeaves(companyId, employeeId);
 
@@ -106,12 +116,32 @@ export const leavesService = {
         (sum, l) => sum + l.numberOfDays,
         0,
       );
-      const totalDays = 20; // Default annual leave
+
+      // Fetch dynamic allocation limit configured in employee database profile if available
+      let totalDays = 30; // High-tier corporate annual baseline default
+      try {
+        const empProfile = await databases.getDocument(
+          APPWRITE_CONFIG.DATABASE_ID,
+          DB_IDS.EMPLOYEES,
+          employeeId
+        );
+        // Fall back gracefully if custom allocation properties do not exist in the collection attributes yet
+        if (empProfile && empProfile.leave_allotment) {
+          totalDays = empProfile.leave_allotment;
+        }
+      } catch (e) {
+        // Fallback to baseline standard
+      }
+
+      const remainingDays = totalDays - usedDays;
 
       return {
         total: totalDays,
         used: usedDays,
-        remaining: totalDays - usedDays,
+        remaining: remainingDays,
+        totalDays: totalDays,
+        usedDays: usedDays,
+        remainingDays: remainingDays
       };
     } catch (error) {
       console.error("Failed to get leave balance:", error);
@@ -127,7 +157,11 @@ export const leavesService = {
       const response = await databases.listDocuments(
         APPWRITE_CONFIG.DATABASE_ID,
         DB_IDS.LEAVES,
-        [Query.equal("company_id", companyId), Query.orderDesc("$createdAt")],
+        [
+          Query.equal("company_id", companyId), 
+          Query.orderDesc("$createdAt"),
+          Query.limit(100)
+        ],
       );
 
       return response.documents.map(mapDocToLeaveRequest);

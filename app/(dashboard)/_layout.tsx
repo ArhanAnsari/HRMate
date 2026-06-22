@@ -149,6 +149,11 @@ export default function DashboardLayout() {
         name="employees/bulk-import"
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
+      {/* 👇 FIXED: Added your new admin screen here to hide it from the tabs bar list */}
+      <Tabs.Screen
+        name="employees/manage-attendance"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
+      />
       <Tabs.Screen
         name="profile"
         options={{ href: null, tabBarStyle: { display: "none" } }}
@@ -159,10 +164,6 @@ export default function DashboardLayout() {
       />
       <Tabs.Screen
         name="bulk-import"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
-      />
-      <Tabs.Screen
-        name="attendance_new"
         options={{ href: null, tabBarStyle: { display: "none" } }}
       />
     </Tabs>

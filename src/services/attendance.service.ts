@@ -78,8 +78,22 @@ export const attendanceService = {
     return attendanceQueries.checkOut(employeeId);
   },
 
-  // Bulk mark all missing employees with a specific status
-  async bulkMarkAll(companyId: string, status: "present" | "absent" | "late") {
+  // 🌟 NEW: Expose individual administrator override system
+  async overrideIndividualAttendance(
+    companyId: string,
+    employeeId: string,
+    name: string,
+    email: string,
+    status: "present" | "absent" | "late"
+  ): Promise<{ success: boolean }> {
+    return attendanceQueries.adminOverrideAttendance(companyId, employeeId, name, email, status);
+  },
+
+  // 🌟 NEW: Expose bulk marking support wrapper
+  async bulkMarkAll(
+    companyId: string,
+    status: "present" | "absent" | "late"
+  ): Promise<{ success: boolean }> {
     return attendanceQueries.bulkMarkCompanyAttendance(companyId, status);
   }
 };
